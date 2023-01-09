@@ -5,11 +5,11 @@ using UnityEngine;
 class AnimationParameterWrapperScript : MonoBehaviour
 {
     [SerializeField] Animator _animator;
-    private int _animVelocityXFloatID, _animVelocityYFloatID, _animVelocityZFloatID, _animSpeedFloatID;
+    private int _animVelocityXFloatID, _animVelocityYFloatID, _animVelocityZFloatID, _animSpeedFloatID, _animDashXFloatID, _animDashYFloatID, _animDashZFloatID;
     private int _animAttack1HeldBoolID, _animIsTouchingWallBoolID, _animIsClimbingBoolID, _animIsRunningBoolID;
     private int _animGroundedStateEnumID, _animWallLookStateEnumID;
 
-    private int _animUpdateEnumStateTriggerID, _animJumpTriggerID, _animLandStableTriggerID;
+    private int _animUpdateEnumStateTriggerID, _animJumpTriggerID, _animLandStableTriggerID, _animDashTriggerID;
 
     private void Awake()
     {
@@ -17,6 +17,9 @@ class AnimationParameterWrapperScript : MonoBehaviour
         _animVelocityYFloatID = Animator.StringToHash("VelocityY");
         _animVelocityZFloatID = Animator.StringToHash("VelocityZ");
         _animSpeedFloatID = Animator.StringToHash("SpeedFloat");
+        _animDashXFloatID = Animator.StringToHash("DashX");
+        _animDashYFloatID = Animator.StringToHash("DashY");
+        _animDashZFloatID = Animator.StringToHash("DashZ");
 
         _animAttack1HeldBoolID = Animator.StringToHash("Attack1Held");
         _animIsTouchingWallBoolID = Animator.StringToHash("IsTouchingWall");
@@ -28,7 +31,8 @@ class AnimationParameterWrapperScript : MonoBehaviour
 
         _animUpdateEnumStateTriggerID = Animator.StringToHash("UpdateEnumStateTrigger");
         _animJumpTriggerID = Animator.StringToHash("JumpTrigger");
-        _animLandStableTriggerID = Animator.StringToHash("LandStableTrigger"); 
+        _animLandStableTriggerID = Animator.StringToHash("LandStableTrigger");
+        _animDashTriggerID = Animator.StringToHash("DashTrigger");
     }
 
     public void SetVelocityX(float animatorVelocityX, float velocityDampTime=0.1f)
@@ -44,6 +48,21 @@ class AnimationParameterWrapperScript : MonoBehaviour
     public void SetVelocityZ(float animatorVelocityZ, float velocityDampTime = 0.1f)
     {
         _animator.SetFloat(_animVelocityZFloatID, animatorVelocityZ, velocityDampTime, Time.deltaTime);
+    }
+
+    public void SetDashX(float animatorDashX, float velocityDampTime = 0.1f)
+    {
+        _animator.SetFloat(_animDashXFloatID, animatorDashX, velocityDampTime, Time.deltaTime);
+    }
+
+    public void SetDashY(float animatorDashY, float velocityDampTime = 0.1f)
+    {
+        _animator.SetFloat(_animDashYFloatID, animatorDashY, velocityDampTime, Time.deltaTime);
+    }
+
+    public void SetDashZ(float animatorDashZ, float velocityDampTime = 0.1f)
+    {
+        _animator.SetFloat(_animDashZFloatID, animatorDashZ, velocityDampTime, Time.deltaTime);
     }
 
     public void SetSpeedFloat(float value, float velocityDampTime = 0.1f)
@@ -89,6 +108,11 @@ class AnimationParameterWrapperScript : MonoBehaviour
     public void SetJumpTrigger()
     {
         _animator.SetTrigger(_animJumpTriggerID);
+    }
+
+    public void SetDashTrigger()
+    {
+        _animator.SetTrigger(_animDashTriggerID);
     }
 
     public void SetLandStableTrigger()

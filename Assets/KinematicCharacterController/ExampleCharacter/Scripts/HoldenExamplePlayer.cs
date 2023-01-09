@@ -24,7 +24,7 @@ namespace KinematicCharacterController.Examples
 
         //private PlayerMovementInputAction playerMovementIA;
         private PlayerControlMap _playerControlMapping;
-        private InputAction _playerMovementIA, _playerAttack1IA, _playerLookIA, _playerJumpIA, _playerCrouchIA, _playerClimbIA, _playerRunIA;
+        private InputAction _playerMovementIA, _playerAttack1IA, _playerLookIA, _playerJumpIA, _playerCrouchIA, _playerClimbIA, _playerRunIA, _playerDashIA;
         [SerializeField] PlayerAttackScript _playerAttackScript;
         [SerializeField] PlayerMovementScript _playerMovementScript;
 
@@ -42,7 +42,7 @@ namespace KinematicCharacterController.Examples
             _playerCrouchIA = _playerControlMapping.Player.Crouch;
             _playerClimbIA = _playerControlMapping.Player.Climb;
             _playerRunIA = _playerControlMapping.Player.Run;
-
+            _playerDashIA = _playerControlMapping.Player.Dash;
 
             _playerMovementIA.Enable();
             _playerAttack1IA.Enable();
@@ -51,6 +51,7 @@ namespace KinematicCharacterController.Examples
             _playerCrouchIA.Enable();
             _playerClimbIA.Enable();
             _playerRunIA.Enable();
+            _playerDashIA.Enable();
 
             //Debug.Log(_playerLookIA.bindings[0].processors);
             string overrideProcessors = "ScaleVector2(x=" + xSensitivity + ",y=" + ySensitivity + ")";
@@ -70,6 +71,7 @@ namespace KinematicCharacterController.Examples
             _playerCrouchIA.Disable();
             _playerClimbIA.Disable();
             _playerRunIA.Disable();
+            _playerDashIA.Disable();
         }
 
         private void Start()
@@ -157,6 +159,8 @@ namespace KinematicCharacterController.Examples
             characterInputs.ClimbUp = _playerClimbIA.WasReleasedThisFrame();
             characterInputs.RunDown = _playerRunIA.WasPressedThisFrame();
             characterInputs.RunUp = _playerRunIA.WasReleasedThisFrame();
+            characterInputs.DashDown = _playerDashIA.WasPressedThisFrame();
+            characterInputs.DashUp = _playerDashIA.WasReleasedThisFrame();
 
 
             // Apply inputs to character

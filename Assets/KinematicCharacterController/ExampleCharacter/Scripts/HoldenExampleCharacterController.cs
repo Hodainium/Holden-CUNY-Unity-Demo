@@ -45,6 +45,8 @@ namespace KinematicCharacterController.Examples
         public bool ClimbUp;
         public bool RunDown;
         public bool RunUp;
+        public bool DashDown;
+        public bool DashUp;
     }
 
     public struct AICharacterInputs
@@ -103,7 +105,9 @@ namespace KinematicCharacterController.Examples
         public float MaxRunCharge = 15f;
         public float RunDrainRate = 10f;
         public float RunRechargeRate = 10f;
-        
+
+        [Header("Dashing")]
+        public float DashForce = 5f;
 
         [Header("Jumping")]
         public bool AllowJumpingWhenSliding = false;
@@ -155,6 +159,7 @@ namespace KinematicCharacterController.Examples
         private Vector3 _moveInputRawXZY;
         private bool _wantsToRun;
         private float _movementSpeedFloat = 0;
+        private bool _wantsToDash;
 
         public int JumpCountDebug { get { return _jumpCountCurrent; } }
 
@@ -269,6 +274,16 @@ namespace KinematicCharacterController.Examples
                         if (inputs.RunUp)
                         {
                             _wantsToRun = false;
+                        }
+
+                        if (inputs.DashDown)
+                        {
+                            _wantsToDash = true;
+                        }
+
+                        if (inputs.RunUp)
+                        {
+                            _wantsToDash = false;
                         }
 
                         // Crouching input
@@ -453,37 +468,52 @@ namespace KinematicCharacterController.Examples
 
                         
 
-                        currentVelocityMagnitude = currentVelocity.magnitude + 0.1f; // re-evaluate magnitude
+                        float currentVelocityMagnitudeDirty = currentVelocity.magnitude + 0.1f; // re-evaluate magnitude
 
-                        if (currentVelocityMagnitude >= MaxMoveBoostSpeed && CanRun() && _wantsToRun) // play boosting -> boosting
+                        if (currentVelocityMagnitudeDirty >= MaxMoveBoostSpeed && CanRun() && _wantsToRun) // play boosting -> boosting
                         {
                             _movementSpeedFloat = 4;
                             targetMovementVelocity = reorientedInput * MaxMoveStableSpeed;
                         }
-                        else if ((currentVelocityMagnitude > MaxMoveRunSpeed && CanRun() && _wantsToRun) || (CanRun() && _wantsToRun)) //play running -> boosting
+                        else if ((currentVelocityMagnitudeDirty > MaxMoveRunSpeed && CanRun() && _wantsToRun) || (CanRun() && _wantsToRun)) //play running -> boosting
                         {
-                            _movementSpeedFloat = 3 + (currentVelocityMagnitude - MaxMoveJogSpeed) / (MaxMoveRunSpeed - MaxMoveJogSpeed); // we want an extra state here this code is
+                            _movementSpeedFloat = 3 + (currentVelocityMagnitudeDirty - MaxMoveJogSpeed) / (MaxMoveRunSpeed - MaxMoveJogSpeed); // we want an extra state here this code is
                             targetMovementVelocity = reorientedInput * MaxMoveBoostSpeed;
                         }
-                        else if (currentVelocityMagnitude > MaxMoveJogSpeed) //Play jogging -> running
+                        else if (currentVelocityMagnitudeDirty > MaxMoveJogSpeed) //Play jogging -> running
                         {
-                            _movementSpeedFloat = 2 + (currentVelocityMagnitude - MaxMoveJogSpeed) / (MaxMoveRunSpeed - MaxMoveJogSpeed);
+                            _movementSpeedFloat = 2 + (currentVelocityMagnitudeDirty - MaxMoveJogSpeed) / (MaxMoveRunSpeed - MaxMoveJogSpeed);
                             targetMovementVelocity = reorientedInput * MaxMoveRunSpeed;
                         }
-                        else if (currentVelocityMagnitude > MaxMoveWalkSpeed) //Play walking -> jogging
+                        else if (currentVelocityMagnitudeDirty > MaxMoveWalkSpeed) //Play walking -> jogging
                         {
-                            _movementSpeedFloat = 1 + (currentVelocityMagnitude - MaxMoveWalkSpeed)/(MaxMoveJogSpeed - MaxMoveWalkSpeed);
+                            _movementSpeedFloat = 1 + (currentVelocityMagnitudeDirty - MaxMoveWalkSpeed)/(MaxMoveJogSpeed - MaxMoveWalkSpeed);
                             targetMovementVelocity = reorientedInput * MaxMoveJogSpeed;
                         }
-                        else if (currentVelocityMagnitude > 0f || _moveInputVector.magnitude > 0f) //Play idle -> walking //Need to check for input or else cant move
+                        else if (_moveInputVector.magnitude > 0f) //Play idle -> walking //Need to check for input or else cant move
                         {
-                            _movementSpeedFloat = currentVelocityMagnitude/MaxMoveWalkSpeed;
+                            _movementSpeedFloat = currentVelocityMagnitudeDirty/MaxMoveWalkSpeed;
                             targetMovementVelocity = reorientedInput * MaxMoveJogSpeed;
                         }
                         else //Play idle
                         {
                             _movementSpeedFloat = 0f;
                             targetMovementVelocity = Vector3.zero;
+                        }
+
+                        if (_wantsToDash)
+                        {
+                            Vector3 dashDirection;
+                            if (_moveInputVector.magnitude > 0)
+                            {
+                                dashDirection = _moveInputVector.normalized * DashForce;
+                            }
+                            else
+                            {
+                                dashDirection = Motor.CharacterForward.normalized * DashForce;
+                            }
+                            AddVelocity(dashDirection);
+                            SetAnimatorDashTriggerAndDirection(dashDirection);
                         }
 
                         if (_wantsToRun && CanRun())
@@ -1336,6 +1366,14 @@ namespace KinematicCharacterController.Examples
         private void SetAnimatorLandStableTrigger()
         {
             _animationParameterWrapperScript.SetLandStableTrigger();
+        }
+
+        public void SetAnimatorDashTriggerAndDirection(Vector3 dashDirection)
+        {
+            _animationParameterWrapperScript.SetDashTrigger();
+            _animationParameterWrapperScript.SetDashX(dashDirection.x);
+            _animationParameterWrapperScript.SetDashY(dashDirection.y);
+            _animationParameterWrapperScript.SetDashZ(dashDirection.z);
         }
 
         private void ResetAnimatorLandStableTrigger()
