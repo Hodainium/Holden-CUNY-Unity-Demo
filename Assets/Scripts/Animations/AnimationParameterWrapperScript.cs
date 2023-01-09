@@ -5,7 +5,7 @@ using UnityEngine;
 class AnimationParameterWrapperScript : MonoBehaviour
 {
     [SerializeField] Animator _animator;
-    private int _animVelocityXFloatID, _animVelocityYFloatID, _animVelocityZFloatID;
+    private int _animVelocityXFloatID, _animVelocityYFloatID, _animVelocityZFloatID, _animSpeedFloatID;
     private int _animAttack1HeldBoolID, _animIsTouchingWallBoolID, _animIsClimbingBoolID, _animIsRunningBoolID;
     private int _animGroundedStateEnumID, _animWallLookStateEnumID;
 
@@ -16,6 +16,7 @@ class AnimationParameterWrapperScript : MonoBehaviour
         _animVelocityXFloatID = Animator.StringToHash("VelocityX");
         _animVelocityYFloatID = Animator.StringToHash("VelocityY");
         _animVelocityZFloatID = Animator.StringToHash("VelocityZ");
+        _animSpeedFloatID = Animator.StringToHash("SpeedFloat");
 
         _animAttack1HeldBoolID = Animator.StringToHash("Attack1Held");
         _animIsTouchingWallBoolID = Animator.StringToHash("IsTouchingWall");
@@ -43,6 +44,11 @@ class AnimationParameterWrapperScript : MonoBehaviour
     public void SetVelocityZ(float animatorVelocityZ, float velocityDampTime = 0.1f)
     {
         _animator.SetFloat(_animVelocityZFloatID, animatorVelocityZ, velocityDampTime, Time.deltaTime);
+    }
+
+    public void SetSpeedFloat(float value, float velocityDampTime = 0.1f)
+    {
+        _animator.SetFloat(_animSpeedFloatID, value, velocityDampTime, Time.deltaTime);
     }
 
     public void SetIsClimbingBool(bool isClimbing)

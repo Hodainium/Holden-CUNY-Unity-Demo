@@ -27,11 +27,11 @@ public class CanvasCharacterStats : MonoBehaviour
     {
         tmpString = "Base Velocity= " + _playerController.Motor.BaseVelocity.magnitude.ToString() + "\n" +
             "Velocity vector= " + _playerController.Motor.BaseVelocity.ToString() + "\n" +
+            "Movement value= " + _playerController.PeekMovementValue().ToString() + "\n" +
             "Player ground state= " + _playerController.CurrentCharacterGroundedState.ToString() + "\n" +
             "Player stance state= " + _playerController.CurrentCharacterState.ToString() + "\n" +
             "Player wall look state= " + _playerController.CurrentCharacterWallLookState.ToString() + "\n" +
             "Is touching wall= " + _playerController.IsTouchingWall().ToString() + "\n" +
-            "Magnet charge= " + _playerController.GetClimbTimer().ToString() + "\n" + 
             "Jump count= " + _playerController.JumpCountDebug.ToString();
 
         _textUIObject.text = tmpString;

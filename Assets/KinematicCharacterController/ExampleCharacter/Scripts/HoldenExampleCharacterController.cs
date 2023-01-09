@@ -66,9 +66,11 @@ namespace KinematicCharacterController.Examples
         public KinematicCharacterMotor Motor;
 
         [Header("Stable Movement")]
-        public float MaxMoveWalkSpeed = 9f;
-        public float MaxMoveRunSpeed = 14f;
-        public float MaxStableMoveSpeed = 14f;
+        public float MaxMoveWalkSpeed = 5f;
+        public float MaxMoveJogSpeed = 10f;
+        public float MaxMoveRunSpeed = 15f;
+        public float MaxMoveBoostSpeed = 20f;
+        public float MaxMoveStableSpeed = 22f;
         public float StableMovementSharpness = 15f;
         public float OrientationSharpness = 10f;
         public CameraOrientationMethod CameraOrientationMethod = CameraOrientationMethod.TowardsCamera;
@@ -152,6 +154,7 @@ namespace KinematicCharacterController.Examples
         private Collider _currentWallCollider = null;
         private Vector3 _moveInputRawXZY;
         private bool _wantsToRun;
+        private float _movementSpeedFloat = 0;
 
         public int JumpCountDebug { get { return _jumpCountCurrent; } }
 
@@ -193,6 +196,11 @@ namespace KinematicCharacterController.Examples
         public void ResetWallLookState()
         {
             CurrentCharacterWallLookState = CharacterWallLookState.Default;
+        }
+
+        public float PeekMovementValue()
+        {
+            return _movementSpeedFloat;
         }
 
         /// <summary>
@@ -443,15 +451,50 @@ namespace KinematicCharacterController.Examples
                          //Implement running quickly
                         Vector3 targetMovementVelocity;
 
+                        
+
+                        currentVelocityMagnitude = currentVelocity.magnitude + 0.1f; // re-evaluate magnitude
+
+                        if (currentVelocityMagnitude >= MaxMoveBoostSpeed && CanRun() && _wantsToRun) // play boosting -> boosting
+                        {
+                            _movementSpeedFloat = 4;
+                            targetMovementVelocity = reorientedInput * MaxMoveStableSpeed;
+                        }
+                        else if ((currentVelocityMagnitude > MaxMoveRunSpeed && CanRun() && _wantsToRun) || (CanRun() && _wantsToRun)) //play running -> boosting
+                        {
+                            _movementSpeedFloat = 3 + (currentVelocityMagnitude - MaxMoveJogSpeed) / (MaxMoveRunSpeed - MaxMoveJogSpeed); // we want an extra state here this code is
+                            targetMovementVelocity = reorientedInput * MaxMoveBoostSpeed;
+                        }
+                        else if (currentVelocityMagnitude > MaxMoveJogSpeed) //Play jogging -> running
+                        {
+                            _movementSpeedFloat = 2 + (currentVelocityMagnitude - MaxMoveJogSpeed) / (MaxMoveRunSpeed - MaxMoveJogSpeed);
+                            targetMovementVelocity = reorientedInput * MaxMoveRunSpeed;
+                        }
+                        else if (currentVelocityMagnitude > MaxMoveWalkSpeed) //Play walking -> jogging
+                        {
+                            _movementSpeedFloat = 1 + (currentVelocityMagnitude - MaxMoveWalkSpeed)/(MaxMoveJogSpeed - MaxMoveWalkSpeed);
+                            targetMovementVelocity = reorientedInput * MaxMoveJogSpeed;
+                        }
+                        else if (currentVelocityMagnitude > 0f || _moveInputVector.magnitude > 0f) //Play idle -> walking //Need to check for input or else cant move
+                        {
+                            _movementSpeedFloat = currentVelocityMagnitude/MaxMoveWalkSpeed;
+                            targetMovementVelocity = reorientedInput * MaxMoveJogSpeed;
+                        }
+                        else //Play idle
+                        {
+                            _movementSpeedFloat = 0f;
+                            targetMovementVelocity = Vector3.zero;
+                        }
+
                         if (_wantsToRun && CanRun())
                         {
                             DrainRunCharge(deltaTime);
-                            targetMovementVelocity = reorientedInput * MaxMoveRunSpeed;
+                            
                         }
                         else
                         {
                             RechargeRunCharge(deltaTime);
-                            targetMovementVelocity = reorientedInput * MaxMoveWalkSpeed;
+                            
                         }
 
                         // Smooth movement Velocity
@@ -747,6 +790,7 @@ namespace KinematicCharacterController.Examples
             UpdateAnimatorIsTouchingWallBool();
             UpdateAnimatorGroundedStateEnum();
             UpdateAnimatorWallLookStateEnum();
+            UpdateAnimatorSpeedFloat();
             SetAnimatorVelocityVector(ref currentVelocity);
         }
 
@@ -1194,31 +1238,6 @@ namespace KinematicCharacterController.Examples
             return _currentRunCharge;
         }
 
-        private void HandleWallTransitionAndVelocity(float deltaTime)
-        {
-            if (_isWallTransition)
-            {
-                _transitionalVelocity = Vector3.ProjectOnPlane(_previousVelocity, _wallNormal); //Need to translate momentum 
-                _isWallTransition = false;
-                if (_transitionalVelocity.magnitude > 0f)
-                {
-                    _hasTransitionalVelocity = true;
-                }
-            }
-            else
-            {
-                _transitionalVelocity = Vector3.zero;
-            }
-            if (_transitionalVelocity.magnitude > 0)
-            {
-                _transitionalVelocity *= (1f / (1f + (WallDrag * deltaTime)));                
-            }
-            else
-            {
-                _hasTransitionalVelocity = false;
-            }
-        }
-
         public bool IsTouchingWall()
         {
             return _isTouchingWall;
@@ -1323,17 +1342,24 @@ namespace KinematicCharacterController.Examples
         {
             _animationParameterWrapperScript.ResetLandStableTrigger();
         }
-        
 
+        private void UpdateAnimatorSpeedFloat()
+        {
+            _animationParameterWrapperScript.SetSpeedFloat(_movementSpeedFloat);
+        }
+
+        public bool isRTPushed()
+        {
+            return false;
+        }
 
 
         private void SetAnimatorVelocityVector(ref Vector3 currentVelocity)
         {
-            float velocityX = Vector3.Dot(currentVelocity.normalized, Motor.CharacterRight);
-            float velocityY = Vector3.Dot(currentVelocity.normalized, Motor.CharacterUp);
-            float velocityZ = Vector3.Dot(currentVelocity.normalized, Motor.CharacterForward);
-            bool overDrive = false;
-            bool isRunning = false;
+            Vector3 moveInputNormalized = _moveInputVector.normalized;
+            float velocityX = Vector3.Dot(moveInputNormalized, Motor.CharacterRight);
+            float velocityY = Vector3.Dot(currentVelocity.normalized, Motor.CharacterUp); //Y is different because gravity!
+            float velocityZ = Vector3.Dot(moveInputNormalized, Motor.CharacterForward);
             //Compare max speed values for ground and air
 
             switch(CurrentCharacterGroundedState)
@@ -1346,42 +1372,43 @@ namespace KinematicCharacterController.Examples
                     }
                 case CharacterGroundedState.GroundedStable:
                     {
-                        Vector3 currentVelocityOnGround = Vector3.ProjectOnPlane(currentVelocity, Motor.GroundingStatus.GroundNormal);
-                        Vector3 xVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterRight);
-                        Vector3 yVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterUp);
-                        Vector3 zVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterForward);
+                        #region old code
+                        //Vector3 currentVelocityOnGround = Vector3.ProjectOnPlane(currentVelocity, Motor.GroundingStatus.GroundNormal);
+                        //Vector3 xVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterRight);
+                        //Vector3 yVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterUp);
+                        //Vector3 zVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterForward);
 
-                        float currentSpeedOnGround = currentVelocityOnGround.magnitude;
-                        if (currentSpeedOnGround > MaxStableMoveSpeed)
-                        {
-                            overDrive = true;
-                        }
-                        if (currentSpeedOnGround >= MaxStableMoveSpeed * 0.5f)
-                        {
-                            isRunning = true;
-                        }
-                        if (currentSpeedOnGround > 0.1f)
-                        {
-                            velocityX = xVelocityVect.magnitude / MaxMoveWalkSpeed;
-                            velocityY = yVelocityVect.magnitude / MaxStableFallSpeed;
-                            velocityZ = zVelocityVect.magnitude / MaxMoveWalkSpeed;
-                            
-                        }
-                        else
-                        {
-                            //Velo is 0
-                            velocityX = 0f;
-                            velocityZ = 0f;
-                        }
+                        //float currentSpeedOnGround = currentVelocityOnGround.magnitude;
+                        //if (currentSpeedOnGround > MaxMoveStableSpeed)
+                        //{
+                        //    overDrive = true;
+                        //}
+                        //if (currentSpeedOnGround >= MaxMoveStableSpeed * 0.5f)
+                        //{
+                        //    isRunning = true;
+                        //}
+                        //if (currentSpeedOnGround > 0.1f)
+                        //{
+                        //    velocityX = xVelocityVect.magnitude / MaxMoveWalkSpeed;
+                        //    velocityY = yVelocityVect.magnitude / MaxStableFallSpeed;
+                        //    velocityZ = zVelocityVect.magnitude / MaxMoveWalkSpeed;
 
-                        SetAnimatorIsRunningBool(isRunning);
+                        //}
+                        //else
+                        //{
+                        //    //Velo is 0
+                        //    velocityX = 0f;
+                        //    velocityZ = 0f;
+                        //}
+
+                        //SetAnimatorIsRunningBool(isRunning);
+                        #endregion
 
                         break;
-
-                        
                     }
             }
 
+            //Set speed multiplier in animator
             _animationParameterWrapperScript.SetVelocityX(velocityX);
             _animationParameterWrapperScript.SetVelocityY(velocityY);
             _animationParameterWrapperScript.SetVelocityZ(velocityZ);
