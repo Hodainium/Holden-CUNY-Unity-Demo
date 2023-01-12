@@ -12,9 +12,10 @@ public class CanvasCharacterStats : MonoBehaviour
     [SerializeField] TMP_Text _textUIObject;
     [SerializeField] Image _climbMeterChargeBarImage;
     [SerializeField] Image _runMeterChargeBarImage;
+    [SerializeField] Image _dashTimerChargeBarImage;
     private bool _isWallTransition;
     string tmpString;
-    private float _climbTimer, _runTimer;
+    private float _climbTimer, _runTimer, _dashTimer;
 
     // Start is called before the first frame update
     void Start()
@@ -38,8 +39,10 @@ public class CanvasCharacterStats : MonoBehaviour
 
         _climbTimer = _playerController.GetClimbTimer();
         _runTimer = _playerController.GetRunTimer();
+        _dashTimer = _playerController.GetDashTimer();
 
         _climbMeterChargeBarImage.fillAmount = _climbTimer/_playerController.MaxClimbCharge;
         _runMeterChargeBarImage.fillAmount = _runTimer/ _playerController.MaxClimbCharge;
+        _dashTimerChargeBarImage.fillAmount = _dashTimer / _playerController.DashCoolDownTime;
     }
 }

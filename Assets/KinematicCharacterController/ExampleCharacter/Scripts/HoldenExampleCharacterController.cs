@@ -108,6 +108,7 @@ namespace KinematicCharacterController.Examples
 
         [Header("Dashing")]
         public float DashForce = 5f;
+        public float DashCoolDownTime = 1f;
 
         [Header("Jumping")]
         public bool AllowJumpingWhenSliding = false;
@@ -129,6 +130,8 @@ namespace KinematicCharacterController.Examples
         public CharacterState CurrentCharacterState { get; private set; }
         public CharacterGroundedState CurrentCharacterGroundedState { get; private set; }
         public CharacterWallLookState CurrentCharacterWallLookState { get; private set; }
+
+        private CharacterWallLookState _previousCharacterWallLookState;
 
         private Collider[] _probedColliders = new Collider[8];
         private RaycastHit[] _probedHits = new RaycastHit[8];
@@ -153,6 +156,7 @@ namespace KinematicCharacterController.Examples
         private bool _isWallTransition;
         private bool _isTouchingWall = false;
         private Timer _wallHitCheckTimer;
+        private Timer _dashTimer;
         private float _currentClimbCharge = 0f;
         private float _currentRunCharge = 0f;
         private Collider _currentWallCollider = null;
@@ -183,6 +187,7 @@ namespace KinematicCharacterController.Examples
             _currentRunCharge = MaxRunCharge;
 
             _wallHitCheckTimer = new Timer(Time.fixedDeltaTime);
+            _dashTimer = new Timer(DashCoolDownTime);
 
             // Assign the characterController to the motor
             Motor.CharacterController = this;
@@ -281,7 +286,7 @@ namespace KinematicCharacterController.Examples
                             _wantsToDash = true;
                         }
 
-                        if (inputs.RunUp)
+                        if (inputs.DashUp)
                         {
                             _wantsToDash = false;
                         }
@@ -501,7 +506,7 @@ namespace KinematicCharacterController.Examples
                             targetMovementVelocity = Vector3.zero;
                         }
 
-                        if (_wantsToDash)
+                        if (_wantsToDash && CanDash())
                         {
                             Vector3 dashDirection;
                             if (_moveInputVector.magnitude > 0)
@@ -512,9 +517,17 @@ namespace KinematicCharacterController.Examples
                             {
                                 dashDirection = Motor.CharacterForward.normalized * DashForce;
                             }
+                            _wantsToDash = false;
+                            _dashTimer.ResetTimer();
                             AddVelocity(dashDirection);
                             SetAnimatorDashTriggerAndDirection(dashDirection);
                         }
+
+                        if (_dashTimer.GetTime() > DashCoolDownTime/2f)
+                        {
+                            targetMovementVelocity = Vector3.zero;
+                        }
+                        
 
                         if (_wantsToRun && CanRun())
                         {
@@ -818,8 +831,6 @@ namespace KinematicCharacterController.Examples
 
             UpdateAnimatorIsClimbingBool();
             UpdateAnimatorIsTouchingWallBool();
-            UpdateAnimatorGroundedStateEnum();
-            UpdateAnimatorWallLookStateEnum();
             UpdateAnimatorSpeedFloat();
             SetAnimatorVelocityVector(ref currentVelocity);
         }
@@ -1040,43 +1051,48 @@ namespace KinematicCharacterController.Examples
                         break;
                     }
             }
-            SetAnimatorEnumStateChangeTrigger();
+            
+            //SetAnimatorEnumStateChangeTrigger();
             CurrentCharacterState = newState;
         }
 
         protected void GroundStateTransitionTo(CharacterGroundedState newState)
         {
-
-            switch (CurrentCharacterGroundedState) //Exiting old(current) state
+            if (CurrentCharacterGroundedState != newState)
             {
-                default:
-                    {
-                        //Do nothing
-                        break;
-                    }
-            }
-            switch (newState) //This is entering the new state //ADD TRANSITION FOR WALLSTATUS, I'm not sure if this will fuck with wall status exit transition part.
-            {
-                case CharacterGroundedState.Airborne:
-                    {
-                        //Do nothing
-                        ResetAnimatorLandStableTrigger();
-                        break;
-                    }
-                case CharacterGroundedState.GroundedStable:
-                    {
-                        SetAnimatorLandStableTrigger();
-                        _currentClimbCharge = MaxClimbCharge;
+                switch (CurrentCharacterGroundedState) //Exiting old(current) state
+                {
+                    default:
+                        {
+                            //Do nothing
+                            break;
+                        }
+                }
+                switch (newState) //This is entering the new state //ADD TRANSITION FOR WALLSTATUS, I'm not sure if this will fuck with wall status exit transition part.
+                {
+                    case CharacterGroundedState.Airborne:
+                        {
+                            //Do nothing
+                            ResetAnimatorLandStableTrigger();
+                            break;
+                        }
+                    case CharacterGroundedState.GroundedStable:
+                        {
+                            SetAnimatorLandStableTrigger();
+                            _currentClimbCharge = MaxClimbCharge;
                         
-                        break;
-                    }
-                default:
-                    {
-                        break;
-                    }
+                            break;
+                        }
+                    default:
+                        {
+                            break;
+                        }
+                }
+            
+                CurrentCharacterGroundedState = newState;
+                UpdateAnimatorGroundedStateEnum();
+                SetAnimatorEnumGroundedChangeTrigger();
             }
-            SetAnimatorEnumStateChangeTrigger();
-            CurrentCharacterGroundedState = newState;
         }
 
         private void EvalaluateWallLookState() 
@@ -1084,6 +1100,7 @@ namespace KinematicCharacterController.Examples
             float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, Motor.CharacterForward);
             Vector3 wallRightDirection = Vector3.Cross(_wallNormal, Motor.CharacterUp);
             float inputWallRightDotProduct = Vector3.Dot(wallRightDirection, Motor.CharacterForward);
+            
             //float CharForwardWallDotProduct = Vector3.Dot(_wallNormal, Motor.CharacterForward);
             if (0.8f < inputWallNormalDotProduct)
             {
@@ -1112,7 +1129,14 @@ namespace KinematicCharacterController.Examples
                 Debug.Log("No state reached. Returning default.");
                 CurrentCharacterWallLookState = CharacterWallLookState.Default;
             }
-            SetAnimatorEnumStateChangeTrigger();
+            
+            if (_previousCharacterWallLookState != CurrentCharacterWallLookState)
+            {
+                _previousCharacterWallLookState = CurrentCharacterWallLookState;
+                UpdateAnimatorWallLookStateEnum();
+                SetAnimatorEnumWallLookChangeTrigger();
+            }
+            
         }
 
         #endregion
@@ -1327,6 +1351,16 @@ namespace KinematicCharacterController.Examples
             return false;
         }
 
+        private bool CanDash()
+        {
+            if (!_dashTimer.IsActive())
+            {
+                _dashTimer.ResetTimer();
+                return true;
+            }
+            return false;
+        }
+
         private void UpdateAnimatorIsClimbingBool()
         {
             _animationParameterWrapperScript.SetIsClimbingBool(_wantsToClimb && CanClimb());
@@ -1353,9 +1387,14 @@ namespace KinematicCharacterController.Examples
             _animationParameterWrapperScript.SetIsRunningBool(value);
         }
 
-        private void SetAnimatorEnumStateChangeTrigger()
+        private void SetAnimatorEnumGroundedChangeTrigger()
         {
-            _animationParameterWrapperScript.SetEnumStateTrigger();
+            _animationParameterWrapperScript.SetGroundedStateTrigger();
+        }
+
+        private void SetAnimatorEnumWallLookChangeTrigger()
+        {
+            _animationParameterWrapperScript.SetWallLookStateTrigger();
         }
 
         private void SetAnimatorJumpTrigger()
@@ -1370,6 +1409,7 @@ namespace KinematicCharacterController.Examples
 
         public void SetAnimatorDashTriggerAndDirection(Vector3 dashDirection)
         {
+            dashDirection = dashDirection.normalized;
             _animationParameterWrapperScript.SetDashTrigger();
             _animationParameterWrapperScript.SetDashX(dashDirection.x);
             _animationParameterWrapperScript.SetDashY(dashDirection.y);
@@ -1381,6 +1421,11 @@ namespace KinematicCharacterController.Examples
             _animationParameterWrapperScript.ResetLandStableTrigger();
         }
 
+        private void ResetAnimatorEnumWallLookChangeTrigger()
+        {
+            _animationParameterWrapperScript.ResetWallLookStateTrigger();
+        }
+
         private void UpdateAnimatorSpeedFloat()
         {
             _animationParameterWrapperScript.SetSpeedFloat(_movementSpeedFloat);
@@ -1389,6 +1434,11 @@ namespace KinematicCharacterController.Examples
         public bool isRTPushed()
         {
             return false;
+        }
+
+        public float GetDashTimer()
+        {
+            return _dashTimer.GetTime();
         }
 
 

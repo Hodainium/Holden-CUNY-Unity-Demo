@@ -9,7 +9,7 @@ class AnimationParameterWrapperScript : MonoBehaviour
     private int _animAttack1HeldBoolID, _animIsTouchingWallBoolID, _animIsClimbingBoolID, _animIsRunningBoolID;
     private int _animGroundedStateEnumID, _animWallLookStateEnumID;
 
-    private int _animUpdateEnumStateTriggerID, _animJumpTriggerID, _animLandStableTriggerID, _animDashTriggerID;
+    private int _animUpdateGroundedStateTriggerID, _animUpdateWallLookStateTriggerID, _animJumpTriggerID, _animLandStableTriggerID, _animDashTriggerID;
 
     private void Awake()
     {
@@ -29,7 +29,8 @@ class AnimationParameterWrapperScript : MonoBehaviour
         _animGroundedStateEnumID = Animator.StringToHash("CharacterGroundedStateEnumIndex");
         _animWallLookStateEnumID = Animator.StringToHash("CharacterWallLookStateEnumIndex");
 
-        _animUpdateEnumStateTriggerID = Animator.StringToHash("UpdateEnumStateTrigger");
+        _animUpdateGroundedStateTriggerID = Animator.StringToHash("UpdateGroundedStateTrigger");
+        _animUpdateWallLookStateTriggerID = Animator.StringToHash("UpdateWallLookStateTrigger");
         _animJumpTriggerID = Animator.StringToHash("JumpTrigger");
         _animLandStableTriggerID = Animator.StringToHash("LandStableTrigger");
         _animDashTriggerID = Animator.StringToHash("DashTrigger");
@@ -100,9 +101,19 @@ class AnimationParameterWrapperScript : MonoBehaviour
         _animator.SetBool(_animIsRunningBoolID, value);
     }
 
-    public void SetEnumStateTrigger()
+    public void SetGroundedStateTrigger()
     {
-        _animator.SetTrigger(_animUpdateEnumStateTriggerID);
+        _animator.SetTrigger(_animUpdateGroundedStateTriggerID);
+    }
+
+    public void SetWallLookStateTrigger()
+    {
+        _animator.SetTrigger(_animUpdateWallLookStateTriggerID);
+    }
+
+    public void ResetWallLookStateTrigger()
+    {
+        _animator.ResetTrigger(_animUpdateWallLookStateTriggerID);
     }
 
     public void SetJumpTrigger()

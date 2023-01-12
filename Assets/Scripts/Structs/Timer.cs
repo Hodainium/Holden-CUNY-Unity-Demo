@@ -24,18 +24,29 @@ public struct Timer
         _lastTickTime = Time.time;
     }
 
+    public float GetTime()
+    {
+        CheckTimer();
+        if (!_isTicking)
+        {
+            _internalTimerValue = 0f;
+        }
+        return _internalTimerValue;
+    }
+
     private bool CheckTimer()
     {
         if (_isTicking)
         {
-            if (_internalTimerValue <= 0f)
-            {
-                _isTicking = false;
-            }
-
             _lastTickTimeDifference = Time.time - _lastTickTime;
             _lastTickTime = Time.time;
             _internalTimerValue -= _lastTickTimeDifference;
+
+            if (_internalTimerValue <= 0f)
+            {
+                _isTicking = false;
+                Debug.Log("Ring");
+            }
         }
 
         return _isTicking;
