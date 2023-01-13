@@ -109,6 +109,8 @@ namespace KinematicCharacterController.Examples
         [Header("Dashing")]
         public float DashForce = 5f;
         public float DashCoolDownTime = 1f;
+        public int DashSpeedBoostTimeInFrames = 24;
+        public int DashSpeedFreezeTimeInFrames = 10;
 
         [Header("Jumping")]
         public bool AllowJumpingWhenSliding = false;
@@ -156,7 +158,9 @@ namespace KinematicCharacterController.Examples
         private bool _isWallTransition;
         private bool _isTouchingWall = false;
         private Timer _wallHitCheckTimer;
-        private Timer _dashTimer;
+        private Timer _dashCooldownTimer;
+        private Timer _dashSpeedBoostTimer;
+        private Timer _dashSpeedFreezeTimer;
         private float _currentClimbCharge = 0f;
         private float _currentRunCharge = 0f;
         private Collider _currentWallCollider = null;
@@ -164,6 +168,9 @@ namespace KinematicCharacterController.Examples
         private bool _wantsToRun;
         private float _movementSpeedFloat = 0;
         private bool _wantsToDash;
+        private bool _isDashing;
+        Vector3 _dashVector;
+        bool _isExitingDash = false;
 
         public int JumpCountDebug { get { return _jumpCountCurrent; } }
 
@@ -187,7 +194,9 @@ namespace KinematicCharacterController.Examples
             _currentRunCharge = MaxRunCharge;
 
             _wallHitCheckTimer = new Timer(Time.fixedDeltaTime);
-            _dashTimer = new Timer(DashCoolDownTime);
+            _dashCooldownTimer = new Timer(DashCoolDownTime);
+            _dashSpeedBoostTimer = new Timer(DashSpeedBoostTimeInFrames * 0.01667f); //Value is length of a single 60fps frame interval in seconds
+            _dashSpeedFreezeTimer = new Timer(DashSpeedFreezeTimeInFrames * 0.01667f);
 
             // Assign the characterController to the motor
             Motor.CharacterController = this;
@@ -506,28 +515,62 @@ namespace KinematicCharacterController.Examples
                             targetMovementVelocity = Vector3.zero;
                         }
 
+                        
+
                         if (_wantsToDash && CanDash())
                         {
-                            Vector3 dashDirection;
+                            
                             if (_moveInputVector.magnitude > 0)
                             {
-                                dashDirection = _moveInputVector.normalized * DashForce;
+                                _dashVector = _moveInputVector.normalized * DashForce;
                             }
                             else
                             {
-                                dashDirection = Motor.CharacterForward.normalized * DashForce;
+                                _dashVector = Motor.CharacterForward.normalized * DashForce;
                             }
                             _wantsToDash = false;
-                            _dashTimer.ResetTimer();
-                            AddVelocity(dashDirection);
-                            SetAnimatorDashTriggerAndDirection(dashDirection);
+                            _isDashing = true;
+                            _dashCooldownTimer.ResetTimer();
+                            _dashSpeedBoostTimer.ResetTimer();
+                            SetAnimatorDashTriggerAndDirection(_dashVector);
                         }
 
-                        if (_dashTimer.GetTime() > DashCoolDownTime/2f)
-                        {
-                            targetMovementVelocity = Vector3.zero;
-                        }
+                        //if (_dashCooldownTimer.GetTime() > DashCoolDownTime/2f)
+                        //{
+                        //    targetMovementVelocity = Vector3.zero;
+                        //}
+
                         
+
+                        if (_isDashing)
+                        {
+                            if (_dashSpeedBoostTimer.IsActive())
+                            {
+                                targetMovementVelocity = _dashVector;
+                            }
+                            else
+                            {
+                                _isDashing = false;
+                                _isExitingDash = true;
+                                _dashSpeedFreezeTimer.ResetTimer();
+                                Debug.Log("Done dashing");
+                            }
+                            
+                        }
+
+                        if (_isExitingDash)
+                        {
+                            if(_dashSpeedFreezeTimer.IsActive())
+                            {
+                                targetMovementVelocity = Vector3.zero;
+                            }
+                            else
+                            {
+                                _isExitingDash = false;
+                                Debug.Log("Done freezing");
+                            }
+                            
+                        }
 
                         if (_wantsToRun && CanRun())
                         {
@@ -1353,9 +1396,9 @@ namespace KinematicCharacterController.Examples
 
         private bool CanDash()
         {
-            if (!_dashTimer.IsActive())
+            if (!_dashCooldownTimer.IsActive())
             {
-                _dashTimer.ResetTimer();
+                _dashCooldownTimer.ResetTimer();
                 return true;
             }
             return false;
@@ -1438,7 +1481,7 @@ namespace KinematicCharacterController.Examples
 
         public float GetDashTimer()
         {
-            return _dashTimer.GetTime();
+            return _dashCooldownTimer.GetTime();
         }
 
 

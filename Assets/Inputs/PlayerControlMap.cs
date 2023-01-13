@@ -402,7 +402,7 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                     ""name"": """",
                     ""id"": ""7317b621-1db3-4873-98bc-df170192a9bb"",
                     ""path"": ""<Gamepad>/rightTrigger"",
-                    ""interactions"": """",
+                    ""interactions"": ""Press"",
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
                     ""action"": ""Dash"",
