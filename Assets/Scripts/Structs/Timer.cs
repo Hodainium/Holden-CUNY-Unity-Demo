@@ -10,8 +10,15 @@ public struct Timer
 
     public Timer(float maxTimerValue)
     {
+        if (maxTimerValue <= 0f)
+        {
+            _maxTimerValue = 0.1f;
+        }
+        else
+        {
+            _maxTimerValue = maxTimerValue;
+        }
         _isTicking = false;
-        _maxTimerValue = maxTimerValue;
         _internalTimerValue = 0f;
         _lastTickTime = 0f;
         _lastTickTimeDifference = 0f;        
@@ -50,6 +57,20 @@ public struct Timer
         }
 
         return _isTicking;
+    }
+
+    private float GetTimerPercentToCompletion()
+    {
+        CheckTimer();
+        if (_isTicking)
+        {
+            return 1f - (_internalTimerValue / _maxTimerValue);
+        }
+        else
+        {
+            return 1f;
+        }
+
     }
 
     public bool IsActive()

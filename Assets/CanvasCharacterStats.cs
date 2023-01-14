@@ -43,6 +43,6 @@ public class CanvasCharacterStats : MonoBehaviour
 
         _climbMeterChargeBarImage.fillAmount = _climbTimer/_playerController.MaxClimbCharge;
         _runMeterChargeBarImage.fillAmount = _runTimer/ _playerController.MaxClimbCharge;
-        _dashTimerChargeBarImage.fillAmount = _dashTimer / _playerController.DashCoolDownTime;
+        _dashTimerChargeBarImage.fillAmount = _dashTimer / _playerController.DashCoolDownTimeInFrames;
     }
 }

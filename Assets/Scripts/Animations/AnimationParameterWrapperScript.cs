@@ -5,7 +5,7 @@ using UnityEngine;
 class AnimationParameterWrapperScript : MonoBehaviour
 {
     [SerializeField] Animator _animator;
-    private int _animVelocityXFloatID, _animVelocityYFloatID, _animVelocityZFloatID, _animSpeedFloatID, _animDashXFloatID, _animDashYFloatID, _animDashZFloatID;
+    private int _animVelocityXFloatID, _animVelocityYFloatID, _animVelocityZFloatID, _animSpeedFloatID, _animDashXFloatID, _animDashYFloatID, _animDashZFloatID, _animVelocityMagnitudeFloatID;
     private int _animAttack1HeldBoolID, _animIsTouchingWallBoolID, _animIsClimbingBoolID, _animIsRunningBoolID;
     private int _animGroundedStateEnumID, _animWallLookStateEnumID;
 
@@ -16,6 +16,7 @@ class AnimationParameterWrapperScript : MonoBehaviour
         _animVelocityXFloatID = Animator.StringToHash("VelocityX");
         _animVelocityYFloatID = Animator.StringToHash("VelocityY");
         _animVelocityZFloatID = Animator.StringToHash("VelocityZ");
+        _animVelocityMagnitudeFloatID = Animator.StringToHash("VelocityMagnitude");
         _animSpeedFloatID = Animator.StringToHash("SpeedFloat");
         _animDashXFloatID = Animator.StringToHash("DashX");
         _animDashYFloatID = Animator.StringToHash("DashY");
@@ -49,6 +50,11 @@ class AnimationParameterWrapperScript : MonoBehaviour
     public void SetVelocityZ(float animatorVelocityZ, float velocityDampTime = 0.1f)
     {
         _animator.SetFloat(_animVelocityZFloatID, animatorVelocityZ, velocityDampTime, Time.deltaTime);
+    }
+
+    public void SetVelocityMagnitude(float magnitude, float velocityDampTime = 0.1f)
+    {
+        _animator.SetFloat(_animVelocityMagnitudeFloatID, magnitude, velocityDampTime, Time.deltaTime);
     }
 
     public void SetDashX(float animatorDashX, float velocityDampTime = 0.1f)

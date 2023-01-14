@@ -159,7 +159,8 @@ namespace KinematicCharacterController.Examples
             characterInputs.ClimbUp = _playerClimbIA.WasReleasedThisFrame();
             characterInputs.RunDown = _playerRunIA.WasPressedThisFrame();
             characterInputs.RunUp = _playerRunIA.WasReleasedThisFrame();
-            characterInputs.DashDown = _playerDashIA.WasPerformedThisFrame();
+            characterInputs.DashPressed = _playerDashIA.WasPerformedThisFrame();
+            characterInputs.DashHeld = _playerDashIA.WasPressedThisFrame();
             characterInputs.DashUp = _playerDashIA.WasReleasedThisFrame();
 
 
