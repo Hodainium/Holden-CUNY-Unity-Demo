@@ -76,6 +76,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
+                },
+                {
+                    "name": "AimDash",
+                    "type": "Button",
+                    "id": "ce568bd1-9f54-41d2-8d32-a43eb57d84a3",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -313,10 +322,10 @@
                 {
                     "name": "",
                     "id": "63323179-4efb-49b2-9860-898865f276d6",
-                    "path": "<Gamepad>/buttonWest",
-                    "interactions": "",
+                    "path": "<Gamepad>/leftStickPress",
+                    "interactions": "Press",
                     "processors": "",
-                    "groups": "",
+                    "groups": "Gamepad",
                     "action": "Crouch",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -369,7 +378,7 @@
                     "name": "",
                     "id": "0e77425d-9e45-4d1a-b457-08032d43a853",
                     "path": "<Gamepad>/buttonEast",
-                    "interactions": "",
+                    "interactions": "Hold",
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "Run",
@@ -379,11 +388,22 @@
                 {
                     "name": "",
                     "id": "7317b621-1db3-4873-98bc-df170192a9bb",
-                    "path": "<Gamepad>/rightTrigger",
+                    "path": "<Gamepad>/buttonEast",
                     "interactions": "Press",
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b65146d0-8ffe-4709-9333-4dc19fc9baee",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "AimDash",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

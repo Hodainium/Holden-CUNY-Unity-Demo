@@ -24,7 +24,7 @@ namespace KinematicCharacterController.Examples
 
         //private PlayerMovementInputAction playerMovementIA;
         private PlayerControlMap _playerControlMapping;
-        private InputAction _playerMovementIA, _playerAttack1IA, _playerLookIA, _playerJumpIA, _playerCrouchIA, _playerClimbIA, _playerRunIA, _playerDashIA;
+        private InputAction _playerMovementIA, _playerAttack1IA, _playerLookIA, _playerJumpIA, _playerCrouchIA, _playerClimbIA, _playerRunIA, _playerDashIA, _playerAimDashIA;
         [SerializeField] PlayerAttackScript _playerAttackScript;
         [SerializeField] PlayerMovementScript _playerMovementScript;
 
@@ -43,6 +43,7 @@ namespace KinematicCharacterController.Examples
             _playerClimbIA = _playerControlMapping.Player.Climb;
             _playerRunIA = _playerControlMapping.Player.Run;
             _playerDashIA = _playerControlMapping.Player.Dash;
+            _playerAimDashIA = _playerControlMapping.Player.AimDash;
 
             _playerMovementIA.Enable();
             _playerAttack1IA.Enable();
@@ -52,6 +53,7 @@ namespace KinematicCharacterController.Examples
             _playerClimbIA.Enable();
             _playerRunIA.Enable();
             _playerDashIA.Enable();
+            _playerAimDashIA.Enable();
 
             //Debug.Log(_playerLookIA.bindings[0].processors);
             string overrideProcessors = "ScaleVector2(x=" + xSensitivity + ",y=" + ySensitivity + ")";
@@ -72,6 +74,7 @@ namespace KinematicCharacterController.Examples
             _playerClimbIA.Disable();
             _playerRunIA.Disable();
             _playerDashIA.Disable();
+            _playerAimDashIA.Disable();
         }
 
         private void Start()
@@ -151,17 +154,18 @@ namespace KinematicCharacterController.Examples
             characterInputs.MoveAxisRight = MoveRawInput.x;
             characterInputs.CameraRotation = CharacterCamera.Transform.rotation;
             characterInputs.JumpDown = _playerJumpIA.WasPressedThisFrame();
-            characterInputs.CrouchDown = _playerCrouchIA.WasPressedThisFrame();
-            characterInputs.CrouchUp = _playerCrouchIA.WasReleasedThisFrame();
+            characterInputs.CrouchPressed = _playerCrouchIA.WasPerformedThisFrame();
+            //characterInputs.CrouchUp = _playerCrouchIA.WasReleasedThisFrame();
             characterInputs.Attack1Down = _playerAttack1IA.WasPressedThisFrame();
             characterInputs.Attack1Up = _playerAttack1IA.WasReleasedThisFrame();
             characterInputs.ClimbDown = _playerClimbIA.WasPressedThisFrame();
             characterInputs.ClimbUp = _playerClimbIA.WasReleasedThisFrame();
-            characterInputs.RunDown = _playerRunIA.WasPressedThisFrame();
+            characterInputs.RunDown = _playerRunIA.WasPerformedThisFrame();
             characterInputs.RunUp = _playerRunIA.WasReleasedThisFrame();
             characterInputs.DashPressed = _playerDashIA.WasPerformedThisFrame();
-            characterInputs.DashHeld = _playerDashIA.WasPressedThisFrame();
-            characterInputs.DashUp = _playerDashIA.WasReleasedThisFrame();
+            characterInputs.AimDashDown = _playerAimDashIA.WasPressedThisFrame();
+            characterInputs.AimDashUp = _playerAimDashIA.WasReleasedThisFrame();
+            //characterInputs.DashUp = _playerDashIA.WasReleasedThisFrame();
 
 
             // Apply inputs to character

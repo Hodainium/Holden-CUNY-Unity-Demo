@@ -37,7 +37,7 @@ namespace KinematicCharacterController.Examples
         public float MoveAxisRight;
         public Quaternion CameraRotation;
         public bool JumpDown;
-        public bool CrouchDown;
+        public bool CrouchPressed;
         public bool CrouchUp;
         public bool Attack1Down;
         public bool Attack1Up;
@@ -46,8 +46,8 @@ namespace KinematicCharacterController.Examples
         public bool RunDown;
         public bool RunUp;
         public bool DashPressed;
-        public bool DashHeld;
-        public bool DashUp;
+        public bool AimDashDown;
+        public bool AimDashUp;        
     }
 
     public struct AICharacterInputs
@@ -108,10 +108,12 @@ namespace KinematicCharacterController.Examples
         public float RunRechargeRate = 10f;
 
         [Header("Dashing")]
+        public int AirDashCountMax = 2;
         public float DashForce = 5f;
         public int DashCoolDownTimeInFrames = 20;
         public int DashSpeedBoostTimeInFrames = 24;
         public int DashSpeedFreezeTimeInFrames = 10;
+        public int DashSpeedPostExitTimeInFrames = 6;
         public float DashDrag = 5f;
         public AnimationCurve dashVelocityCurve;
 
@@ -173,11 +175,18 @@ namespace KinematicCharacterController.Examples
         private bool _wantsToDash;
         private bool _isDashing;
         Vector3 _dashVector;
-        bool _isExitingDash = false;
+        private bool _isExitingDash = false;
         private int _frames;
         private int _frames1;
+        private int _dashCountCurrent;
+        private bool _isRunning;
+        private bool _wantsToCrouch;
+        private bool _isAimingDash;
+
+        const float SIXTYFPSFRAMEINTERVAL = 0.01667f;
 
         public int JumpCountDebug { get { return _jumpCountCurrent; } }
+        public int DashCountDebug { get { return _dashCountCurrent; } }
 
         private Vector3 lastInnerNormal = Vector3.zero;
         private Vector3 lastOuterNormal = Vector3.zero;
@@ -199,9 +208,9 @@ namespace KinematicCharacterController.Examples
             _currentRunCharge = MaxRunCharge;
 
             _wallHitCheckTimer = new Timer(Time.fixedDeltaTime);
-            _dashCooldownTimer = new Timer(DashCoolDownTimeInFrames * 0.01667f);
-            _dashSpeedBoostTimer = new Timer(DashSpeedBoostTimeInFrames * 0.01667f); //Value is length of a single 60fps frame interval in seconds
-            _dashSpeedFreezeTimer = new Timer(DashSpeedFreezeTimeInFrames * 0.01667f);
+            _dashCooldownTimer = new Timer(DashCoolDownTimeInFrames * SIXTYFPSFRAMEINTERVAL);
+            _dashSpeedBoostTimer = new Timer(DashSpeedBoostTimeInFrames * SIXTYFPSFRAMEINTERVAL); //Value is length of a single 60fps frame interval in seconds
+            _dashSpeedFreezeTimer = new Timer(DashSpeedFreezeTimeInFrames * SIXTYFPSFRAMEINTERVAL);
 
             // Assign the characterController to the motor
             Motor.CharacterController = this;
@@ -300,19 +309,23 @@ namespace KinematicCharacterController.Examples
                             _wantsToDash = true;
                         }
 
-                        if (inputs.DashHeld)
+                        if (inputs.CrouchPressed)
                         {
-                            _wantsToRun = true;
+                            _wantsToCrouch = !_wantsToCrouch;
                         }
 
-                        if (inputs.DashUp)
+                        if (inputs.AimDashDown)
                         {
-                            _wantsToDash = false;
-                            _wantsToRun = false;
+                            _isAimingDash = true;
+                        }
+
+                        if (inputs.AimDashUp)
+                        {
+                            _isAimingDash = false;
                         }
 
                         // Crouching input
-                        if (inputs.CrouchDown)
+                        if (_wantsToCrouch)
                         {
                             _shouldBeCrouching = true;
 
@@ -323,7 +336,7 @@ namespace KinematicCharacterController.Examples
                                 MeshRoot.localScale = new Vector3(1f, 0.5f, 1f);
                             }
                         }
-                        else if (inputs.CrouchUp)
+                        else if (!_wantsToCrouch)
                         {
                             _shouldBeCrouching = false;
                         }
@@ -331,6 +344,12 @@ namespace KinematicCharacterController.Examples
                         break;
                     }
             }
+        }
+
+        private void ResetCrouching()
+        {
+            _wantsToCrouch = false;
+            _shouldBeCrouching = false;
         }
 
         /// <summary>
@@ -489,19 +508,18 @@ namespace KinematicCharacterController.Examples
                         Vector3 reorientedInput = Vector3.Cross(effectiveGroundNormal, inputRight).normalized * _moveInputVector.magnitude;
                         Vector3 targetMovementVelocity;
 
-                        
-
                         float currentVelocityMagnitudeDirty = currentVelocity.magnitude + 0.1f; // re-evaluate magnitude
 
-                        if (currentVelocityMagnitudeDirty >= MaxMoveBoostSpeed && CanRun() && _wantsToRun) // play boosting -> boosting
+                        if (currentVelocityMagnitudeDirty >= MaxMoveBoostSpeed && CanRun() && (_wantsToRun || _isRunning)) // play boosting -> boosting
                         {
                             _movementSpeedFloat = 4;
                             targetMovementVelocity = reorientedInput * MaxMoveStableSpeed;
                         }
-                        else if ((currentVelocityMagnitudeDirty > MaxMoveRunSpeed && CanRun() && _wantsToRun) || (CanRun() && _wantsToRun)) //play running -> boosting
+                        else if ((((currentVelocityMagnitudeDirty > MaxMoveRunSpeed) && _wantsToRun) || _isRunning) && CanRun()) //play running -> boosting          // && CanRun()
                         {
                             _movementSpeedFloat = 3 + (currentVelocityMagnitudeDirty - MaxMoveJogSpeed) / (MaxMoveRunSpeed - MaxMoveJogSpeed); // we want an extra state here this code is
                             targetMovementVelocity = reorientedInput * MaxMoveBoostSpeed;
+                            _isRunning = true;
                         }
                         else if (currentVelocityMagnitudeDirty > MaxMoveJogSpeed || _isExitingDash) //Play jogging -> running
                         {
@@ -513,13 +531,14 @@ namespace KinematicCharacterController.Examples
                             _movementSpeedFloat = 1 + (currentVelocityMagnitudeDirty - MaxMoveWalkSpeed)/(MaxMoveJogSpeed - MaxMoveWalkSpeed);
                             targetMovementVelocity = reorientedInput * MaxMoveJogSpeed;
                         }
-                        else if (_moveInputVector.magnitude > 0f) //Play idle -> walking //Need to check for input or else cant move
+                        else if (_moveInputVector.magnitude > 0.1f) //Play idle -> walking //Need to check for input or else cant move
                         {
                             _movementSpeedFloat = currentVelocityMagnitudeDirty/MaxMoveWalkSpeed;
                             targetMovementVelocity = reorientedInput * MaxMoveJogSpeed;
                         }
                         else //Play idle
                         {
+                            _isRunning = false;
                             _movementSpeedFloat = 0f;
                             targetMovementVelocity = Vector3.zero;
                         }
@@ -804,6 +823,7 @@ namespace KinematicCharacterController.Examples
                 _isDashing = true;
                 _dashCooldownTimer.ResetTimer();
                 _dashSpeedBoostTimer.ResetTimer();
+                _dashCountCurrent--;
                 SetAnimatorDashTriggerAndDirection(_dashVector, ref currentVelocity);
             }
 
@@ -835,6 +855,7 @@ namespace KinematicCharacterController.Examples
                 else
                 {
                     _isExitingDash = false;
+                    _isRunning = true;
                     Debug.Log("Done freezing");
                 }
                 
@@ -941,6 +962,11 @@ namespace KinematicCharacterController.Examples
                             {
                                 // Keep track of time since we were last able to jump (for grace period)
                                 _timeSinceLastAbleToJump += deltaTime;
+                            }
+
+                            if (Motor.GroundingStatus.IsStableOnGround)
+                            {
+                                _dashCountCurrent = AirDashCountMax;
                             }
                         }
 
@@ -1126,6 +1152,10 @@ namespace KinematicCharacterController.Examples
             {
                 switch (CurrentCharacterGroundedState) //Exiting old(current) state
                 {
+                    case CharacterGroundedState.GroundedStable:
+                        {
+                            break;
+                        }
                     default:
                         {
                             //Do nothing
@@ -1137,6 +1167,7 @@ namespace KinematicCharacterController.Examples
                     case CharacterGroundedState.Airborne:
                         {
                             //Do nothing
+                            ResetCrouching();
                             ResetAnimatorLandStableTrigger();
                             break;
                         }
@@ -1408,7 +1439,7 @@ namespace KinematicCharacterController.Examples
 
         private bool CanRun()
         {
-            if ((_currentRunCharge > 0f))
+            if ((_currentRunCharge > 0f) && _moveInputVector.magnitude > 0.1f)
             {
                 return true;
             }
@@ -1417,7 +1448,7 @@ namespace KinematicCharacterController.Examples
 
         private bool CanDash()
         {
-            if (!_dashCooldownTimer.IsActive())
+            if (!_dashCooldownTimer.IsActive() && _dashCountCurrent > 0)
             {
                 _dashCooldownTimer.ResetTimer();
                 return true;

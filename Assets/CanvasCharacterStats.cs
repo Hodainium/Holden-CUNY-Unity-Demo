@@ -33,6 +33,7 @@ public class CanvasCharacterStats : MonoBehaviour
             "Player stance state= " + _playerController.CurrentCharacterState.ToString() + "\n" +
             "Player wall look state= " + _playerController.CurrentCharacterWallLookState.ToString() + "\n" +
             "Is touching wall= " + _playerController.IsTouchingWall().ToString() + "\n" +
+            "Dash count= " + _playerController.DashCountDebug.ToString() + "\n" +
             "Jump count= " + _playerController.JumpCountDebug.ToString();
 
         _textUIObject.text = tmpString;

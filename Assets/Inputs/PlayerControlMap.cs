@@ -98,6 +98,15 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""AimDash"",
+                    ""type"": ""Button"",
+                    ""id"": ""ce568bd1-9f54-41d2-8d32-a43eb57d84a3"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -335,10 +344,10 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""63323179-4efb-49b2-9860-898865f276d6"",
-                    ""path"": ""<Gamepad>/buttonWest"",
-                    ""interactions"": """",
+                    ""path"": ""<Gamepad>/leftStickPress"",
+                    ""interactions"": ""Press"",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""Gamepad"",
                     ""action"": ""Crouch"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
@@ -391,7 +400,7 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                     ""name"": """",
                     ""id"": ""0e77425d-9e45-4d1a-b457-08032d43a853"",
                     ""path"": ""<Gamepad>/buttonEast"",
-                    ""interactions"": """",
+                    ""interactions"": ""Hold"",
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
                     ""action"": ""Run"",
@@ -401,11 +410,22 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""7317b621-1db3-4873-98bc-df170192a9bb"",
-                    ""path"": ""<Gamepad>/rightTrigger"",
+                    ""path"": ""<Gamepad>/buttonEast"",
                     ""interactions"": ""Press"",
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
                     ""action"": ""Dash"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b65146d0-8ffe-4709-9333-4dc19fc9baee"",
+                    ""path"": ""<Gamepad>/leftShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""AimDash"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1001,6 +1021,7 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
         m_Player_Climb = m_Player.FindAction("Climb", throwIfNotFound: true);
         m_Player_Run = m_Player.FindAction("Run", throwIfNotFound: true);
         m_Player_Dash = m_Player.FindAction("Dash", throwIfNotFound: true);
+        m_Player_AimDash = m_Player.FindAction("AimDash", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1080,6 +1101,7 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Climb;
     private readonly InputAction m_Player_Run;
     private readonly InputAction m_Player_Dash;
+    private readonly InputAction m_Player_AimDash;
     public struct PlayerActions
     {
         private @PlayerControlMap m_Wrapper;
@@ -1092,6 +1114,7 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
         public InputAction @Climb => m_Wrapper.m_Player_Climb;
         public InputAction @Run => m_Wrapper.m_Player_Run;
         public InputAction @Dash => m_Wrapper.m_Player_Dash;
+        public InputAction @AimDash => m_Wrapper.m_Player_AimDash;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -1125,6 +1148,9 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                 @Dash.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnDash;
                 @Dash.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnDash;
                 @Dash.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnDash;
+                @AimDash.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAimDash;
+                @AimDash.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAimDash;
+                @AimDash.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAimDash;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -1153,6 +1179,9 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                 @Dash.started += instance.OnDash;
                 @Dash.performed += instance.OnDash;
                 @Dash.canceled += instance.OnDash;
+                @AimDash.started += instance.OnAimDash;
+                @AimDash.performed += instance.OnAimDash;
+                @AimDash.canceled += instance.OnAimDash;
             }
         }
     }
@@ -1317,6 +1346,7 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
         void OnClimb(InputAction.CallbackContext context);
         void OnRun(InputAction.CallbackContext context);
         void OnDash(InputAction.CallbackContext context);
+        void OnAimDash(InputAction.CallbackContext context);
     }
     public interface IUIActions
     {
