@@ -48,10 +48,8 @@ public struct Timer
             _lastTickTimeDifference = Time.time - _lastTickTime;
             _lastTickTime = Time.time;
             _internalTimerValue -= _lastTickTimeDifference;
-            Debug.Log("Internal timer value: " + _internalTimerValue);
             if (_internalTimerValue <= 0f)
             {
-                Debug.Log("Final value: " + _internalTimerValue);
                 _isTicking = false;
             }
         }

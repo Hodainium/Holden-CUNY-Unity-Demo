@@ -6,7 +6,7 @@ class AnimationParameterWrapperScript : MonoBehaviour
 {
     [SerializeField] Animator _animator;
     private int _animVelocityXFloatID, _animVelocityYFloatID, _animVelocityZFloatID, _animSpeedFloatID, _animDashXFloatID, _animDashYFloatID, _animDashZFloatID, _animVelocityMagnitudeFloatID;
-    private int _animAttack1HeldBoolID, _animIsTouchingWallBoolID, _animIsClimbingBoolID, _animIsRunningBoolID;
+    private int _animAttack1HeldBoolID, _animIsTouchingWallBoolID, _animIsWallRunningBoolID, _animIsRunningBoolID, _animIsWallRunLeftBoolID;
     private int _animGroundedStateEnumID, _animWallLookStateEnumID;
 
     private int _animUpdateGroundedStateTriggerID, _animUpdateWallLookStateTriggerID, _animJumpTriggerID, _animLandStableTriggerID, _animDashTriggerID;
@@ -24,8 +24,9 @@ class AnimationParameterWrapperScript : MonoBehaviour
 
         _animAttack1HeldBoolID = Animator.StringToHash("Attack1Held");
         _animIsTouchingWallBoolID = Animator.StringToHash("IsTouchingWall");
-        _animIsClimbingBoolID = Animator.StringToHash("IsClimbing");
+        _animIsWallRunningBoolID = Animator.StringToHash("IsWallRunning");
         _animIsRunningBoolID = Animator.StringToHash("IsRunning");
+        _animIsWallRunLeftBoolID = Animator.StringToHash("IsWallRunLeft");
 
         _animGroundedStateEnumID = Animator.StringToHash("CharacterGroundedStateEnumIndex");
         _animWallLookStateEnumID = Animator.StringToHash("CharacterWallLookStateEnumIndex");
@@ -77,14 +78,19 @@ class AnimationParameterWrapperScript : MonoBehaviour
         _animator.SetFloat(_animSpeedFloatID, value, velocityDampTime, Time.deltaTime);
     }
 
-    public void SetIsClimbingBool(bool isClimbing)
+    public void SetIsWallRunningBool(bool isClimbing)
     {
-        _animator.SetBool(_animIsClimbingBoolID, isClimbing);
+        _animator.SetBool(_animIsWallRunningBoolID, isClimbing);
     }
 
     public void SetIsTouchingWallBool(bool isTouchingWall)
     {
         _animator.SetBool(_animIsTouchingWallBoolID, isTouchingWall);
+    }
+
+    public void SetIsWallRunLeftBool(bool isWallRunLeft)
+    {
+        _animator.SetBool(_animIsWallRunLeftBoolID, isWallRunLeft);
     }
 
     public void SetAttack1State(bool isHeld)

@@ -13,16 +13,17 @@ namespace KinematicCharacterController.Examples
     {
         GroundedStable,
         GroundedUnstable,
-        Airborne
+        Airborne,
+        Wall
     }
 
     public enum CharacterWallLookState
     {
-        Default,
         Forward,
         Left,
         Right,
-        Away
+        Away,
+        NoWall
     }
 
     public enum CameraOrientationMethod
@@ -87,16 +88,25 @@ namespace KinematicCharacterController.Examples
         [Header("Wall Sliding and Running")]
         public bool AllowWallRun = true;
         public float WallRunAccelerationSpeed = 30f;
-        public float MaxWallRunSpeed = 30f;
+        
         public float WallDrag = 0.3f;
         public float ForcedWallDrag = 0.5f;
-        public float WallAttractForce = 0.1f;
-        public float WallPushForce = 1f;
-        public float WallClimbSpeedMax = 1;
         public float WallClimbMovementSharpness = 15f;
         public float WallInputControlledTractionMax = 0.9f;
         public float WallTraction = 0.5f;
         public float WallInputControlledSpeedMax = 5f;
+
+        [Header("New Wall Climb stuff")]
+        public float WallClimbMinimumNeededSpeed = 15f;
+        public float MaxWallSpeedLROne = 20f;
+        public float MaxWallSpeedLRTwo = 25f;
+        public float WallClimbSpeedFrontHorizontalMax = 8f;
+        public float WallClimbSpeedFrontVerticalOneMax = 15f;
+        public float WallClimbSpeedFrontVerticalTwoMax = 20f;
+        public float WallAttractForce = 0.1f;
+        public float WallRepulseForce = 1f;
+        public int WallHitFixedUpdateGraceCount = 2;
+        public float xAngleOffset = 0f;
 
         [Header("Magnet")]
         public float MaxClimbCharge = 15f;
@@ -161,7 +171,6 @@ namespace KinematicCharacterController.Examples
         private Vector3 _transitionalVelocity;
         private bool _hasTransitionalVelocity;
         private bool _isWallTransition;
-        private bool _isTouchingWall = false;
         private Timer _wallHitCheckTimer;
         private Timer _dashCooldownTimer;
         private Timer _dashSpeedBoostTimer;
@@ -169,7 +178,7 @@ namespace KinematicCharacterController.Examples
         private float _currentClimbCharge = 0f;
         private float _currentRunCharge = 0f;
         private Collider _currentWallCollider = null;
-        private Vector3 _moveInputRawXZY;
+        private Vector3 _moveInputRawXZX;
         private bool _wantsToRun;
         private float _movementSpeedFloat = 0;
         private bool _wantsToDash;
@@ -182,6 +191,8 @@ namespace KinematicCharacterController.Examples
         private bool _isRunning;
         private bool _wantsToCrouch;
         private bool _isAimingDash;
+        Vector3 _lookInputNonPlanarVector;
+        private bool _isWallRunning;
 
         const float SIXTYFPSFRAMEINTERVAL = 0.01667f;
 
@@ -202,12 +213,12 @@ namespace KinematicCharacterController.Examples
         {
             // Handle initial state
             CharacterStateTransitionTo(CharacterState.Default);
-            GroundStateTransitionTo(CharacterGroundedState.GroundedStable);
+            CharacterGroundedStateTransitionTo(CharacterGroundedState.GroundedStable);
 
             _currentClimbCharge = MaxClimbCharge;
             _currentRunCharge = MaxRunCharge;
 
-            _wallHitCheckTimer = new Timer(Time.fixedDeltaTime);
+            _wallHitCheckTimer = new Timer(Time.fixedDeltaTime*WallHitFixedUpdateGraceCount);
             _dashCooldownTimer = new Timer(DashCoolDownTimeInFrames * SIXTYFPSFRAMEINTERVAL);
             _dashSpeedBoostTimer = new Timer(DashSpeedBoostTimeInFrames * SIXTYFPSFRAMEINTERVAL); //Value is length of a single 60fps frame interval in seconds
             _dashSpeedFreezeTimer = new Timer(DashSpeedFreezeTimeInFrames * SIXTYFPSFRAMEINTERVAL);
@@ -228,7 +239,7 @@ namespace KinematicCharacterController.Examples
 
         public void ResetWallLookState()
         {
-            CurrentCharacterWallLookState = CharacterWallLookState.Default;
+            CurrentCharacterWallLookState = CharacterWallLookState.NoWall;
         }
 
         public float PeekMovementValue()
@@ -254,12 +265,13 @@ namespace KinematicCharacterController.Examples
 
             switch (CurrentCharacterState)
             {
-                case CharacterState.Default:
+                default:
                     {
                         // Move and look inputs
                         _moveInputVector = cameraPlanarRotation * moveInputVector;
                         _moveInputRawVector = moveInputVector;
-                        _moveInputRawXZY = new Vector3(moveInputVector.x, moveInputVector.z, 0f);
+                        _moveInputRawXZX = new Vector3(moveInputVector.x, moveInputVector.z, moveInputVector.x);
+                        _lookInputNonPlanarVector = inputs.CameraRotation * Vector3.forward;
 
                         switch (CameraOrientationMethod)
                         {
@@ -378,7 +390,8 @@ namespace KinematicCharacterController.Examples
         /// </summary>
         public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
         {
-            if (_isTouchingWall)
+            Vector3 currentUp = (currentRotation * Vector3.up);
+            if (CurrentCharacterGroundedState == CharacterGroundedState.Wall)
             {
                 Vector3 wallRightDirection = Vector3.Cross(_wallNormal, Motor.CharacterUp);
 
@@ -386,7 +399,10 @@ namespace KinematicCharacterController.Examples
                 {
                     case CharacterWallLookState.Forward:
                         {
-                            currentRotation = Quaternion.LookRotation(-_wallNormal, Motor.CharacterUp);
+                            currentRotation = Quaternion.LookRotation(-_wallNormal, Vector3.up);
+                            
+                            //Vector3 initialCharacterBottomHemiCenter = Motor.TransientPosition + (currentUp * Motor.Capsule.radius);
+                            //Motor.SetTransientPosition(initialCharacterBottomHemiCenter + (currentRotation * Vector3.down * Motor.Capsule.radius));
                             break;
                         }
 
@@ -400,6 +416,12 @@ namespace KinematicCharacterController.Examples
                         currentRotation = Quaternion.LookRotation(wallRightDirection, Motor.CharacterUp);
                         break;
                 }
+
+                if (_isWallRunning)
+                {
+                    Vector3 wallRunUp = Quaternion.AngleAxis(xAngleOffset, Vector3.Cross(Vector3.up, _wallNormal)) * Vector3.up;
+                    currentRotation = currentRotation * Quaternion.FromToRotation(currentUp, wallRunUp) ;
+                }
             }
             else
             {
@@ -409,10 +431,10 @@ namespace KinematicCharacterController.Examples
                     Vector3 smoothedLookInputDirection = Vector3.Slerp(Motor.CharacterForward, _lookInputVector, 1 - Mathf.Exp(-OrientationSharpness * deltaTime)).normalized;
 
                     // Set the current rotation (which will be used by the KinematicCharacterMotor)
-                    currentRotation = Quaternion.LookRotation(smoothedLookInputDirection, Motor.CharacterUp);
+                    currentRotation = Quaternion.LookRotation(smoothedLookInputDirection, Vector3.up); //
                 }
 
-                Vector3 currentUp = (currentRotation * Vector3.up);
+                
                 switch (BonusOrientationMethod)
                 {
                     case BonusOrientationMethod.TowardsGravity:
@@ -427,7 +449,7 @@ namespace KinematicCharacterController.Examples
                             if (Motor.GroundingStatus.IsStableOnGround)
                             {
                                 Vector3 initialCharacterBottomHemiCenter = Motor.TransientPosition + (currentUp * Motor.Capsule.radius);
-
+                                
                                 Vector3 smoothedGroundNormal = Vector3.Slerp(Motor.CharacterUp, Motor.GroundingStatus.GroundNormal, 1 - Mathf.Exp(-BonusOrientationSharpness * deltaTime));
                                 currentRotation = Quaternion.FromToRotation(currentUp, smoothedGroundNormal) * currentRotation;
 
@@ -448,12 +470,6 @@ namespace KinematicCharacterController.Examples
 
                             switch (CurrentCharacterGroundedState)
                             {
-                                //case CharacterGroundedState.Airborne: //Rotate towards camera
-                                //    {
-                                //        velocityOnInputsPlane = Vector3.ProjectOnPlane(Motor.BaseVelocity, Motor.CharacterUp);
-                                //        smoothedLookInputDirection = Vector3.Slerp(Motor.CharacterForward, _lookInputVector, 1 - Mathf.Exp(-OrientationSharpness * deltaTime)).normalized;
-                                //        break;
-                                //    }
                                 default:
                                     {
                                         velocityOnInputsPlane = Vector3.ProjectOnPlane(Motor.BaseVelocity, Motor.CharacterUp);
@@ -466,6 +482,21 @@ namespace KinematicCharacterController.Examples
                             // Set the current rotation (which will be used by the KinematicCharacterMotor)
                             currentRotation = Quaternion.LookRotation(smoothedLookInputDirection, Motor.CharacterUp);
 
+                            if (Motor.GroundingStatus.IsStableOnGround)
+                            {
+                                Vector3 initialCharacterBottomHemiCenter = Motor.TransientPosition + (currentUp * Motor.Capsule.radius);
+
+                                Vector3 smoothedGroundNormal = Vector3.Slerp(Motor.CharacterUp, Motor.GroundingStatus.GroundNormal, 1 - Mathf.Exp(-BonusOrientationSharpness * deltaTime));
+                                currentRotation = Quaternion.FromToRotation(currentUp, smoothedGroundNormal) * currentRotation;
+
+                                // Move the position to create a rotation around the bottom hemi center instead of around the pivot
+                                Motor.SetTransientPosition(initialCharacterBottomHemiCenter + (currentRotation * Vector3.down * Motor.Capsule.radius));
+                            }
+                            else
+                            {
+                                Vector3 smoothedGravityDir = Vector3.Slerp(currentUp, -Gravity.normalized, 1 - Mathf.Exp(-BonusOrientationSharpness * deltaTime));
+                                currentRotation = Quaternion.FromToRotation(currentUp, smoothedGravityDir) * currentRotation;
+                            }
 
                             break;
                         }
@@ -492,13 +523,9 @@ namespace KinematicCharacterController.Examples
             {
                 case CharacterGroundedState.GroundedStable:
                     {
-                        if (_isTouchingWall)
-                        {
-                            AddVelocity(_wallNormal * -WallAttractForce * deltaTime);
-                        }
                         float currentVelocityMagnitude = currentVelocity.magnitude;
 
-                        Vector3 effectiveGroundNormal = Motor.GroundingStatus.GroundNormal;
+                        Vector3 effectiveGroundNormal = Motor.GroundingStatus.GroundNormal;                        
 
                         // Reorient velocity on slope
                         currentVelocity = Motor.GetDirectionTangentToSurface(currentVelocity, effectiveGroundNormal) * currentVelocityMagnitude;
@@ -517,7 +544,7 @@ namespace KinematicCharacterController.Examples
                         }
                         else if ((((currentVelocityMagnitudeDirty > MaxMoveRunSpeed) && _wantsToRun) || _isRunning) && CanRun()) //play running -> boosting          // && CanRun()
                         {
-                            _movementSpeedFloat = 3 + (currentVelocityMagnitudeDirty - MaxMoveJogSpeed) / (MaxMoveRunSpeed - MaxMoveJogSpeed); // we want an extra state here this code is
+                            _movementSpeedFloat = 3 + (currentVelocityMagnitudeDirty - MaxMoveRunSpeed) / (MaxMoveBoostSpeed - MaxMoveRunSpeed); // we want an extra state here this code is
                             targetMovementVelocity = reorientedInput * MaxMoveBoostSpeed;
                             _isRunning = true;
                         }
@@ -542,22 +569,6 @@ namespace KinematicCharacterController.Examples
                             _movementSpeedFloat = 0f;
                             targetMovementVelocity = Vector3.zero;
                         }
-
-                        
-
-                        
-
-                        if (_wantsToRun && CanRun())
-                        {
-                            DrainRunCharge(deltaTime);
-                            
-                        }
-                        else
-                        {
-                            RechargeRunCharge(deltaTime);
-                            
-                        }
-
                         // Smooth movement Velocity
                         currentVelocity = Vector3.Lerp(currentVelocity, targetMovementVelocity, 1f - Mathf.Exp(-StableMovementSharpness * deltaTime));
 
@@ -594,208 +605,134 @@ namespace KinematicCharacterController.Examples
 
                 case CharacterGroundedState.Airborne:
                     {
+
+                        // Apply added velocity
+                        currentVelocity += GetAddedAirVelocity(ref currentVelocity, deltaTime);
+
+                        // Gravity
+                        currentVelocity += Gravity * deltaTime;
+
+                        // Drag
+                        currentVelocity *= (1f / (1f + (Drag * deltaTime)));
+
+                        break;
+                    }
+
+                case CharacterGroundedState.Wall:
+                    {
                         Vector3 gravityVelocity = Vector3.zero;
+                        Vector3 addedWallRunVelocity = Vector3.zero;
+                        Vector3 wallRunBoostAdditive = Vector3.zero;
+                        Vector3 wallClimbAdditive = Vector3.zero;
+                        Vector3 wallClimbInputDirectionNormalized;
+                        Vector3 targetMovementVelocity;
 
-                        //HandleWallTransitionAndVelocity(deltaTime); //I don't think we even need this. The physics engine should handle transitional velocity already. We should just be sure to convert it initially and just add to current velocity
-                        //if (_hasTransitionalVelocity)
-                        //{
-                        //    AddVelocity(_transitionalVelocity);
-                        //    Debug.Log(_transitionalVelocity);
-                        //}
-
-                        if (_isTouchingWall)
+                        switch (CurrentCharacterWallLookState)
                         {
-                            Vector3 addedWallRunVelocity = Vector3.zero;
-                            Vector3 wallRunBoostAdditive = Vector3.zero;
-                            Vector3 wallClimbAdditive = Vector3.zero;
-                            switch (CurrentCharacterWallLookState)
-                            {
-                                case CharacterWallLookState.Forward: //Start climbing wall
+                            case CharacterWallLookState.Forward: //Start climbing wall
+                                {
+                                    float inputAgainstWall = Vector3.Dot(_moveInputVector, -_wallNormal);
+
+                                    if (CanClimb() && inputAgainstWall > -0.2f) //If we are above a certain velocity slide on the wall instead of climb. Uncontrollable velocity  
                                     {
-                                        float inputAgainstWall = Vector3.Dot(_moveInputVector, -_wallNormal);
+                                        wallClimbInputDirectionNormalized = Vector3.ProjectOnPlane(_moveInputRawXZX, _wallNormal).normalized; //= _moveInputRawXZY.normalized; //
                                         
-                                        if (_wantsToClimb && CanClimb()) //If we are above a certain velocity slide on the wall instead of climb. Uncontrollable velocity
-                                        {
-                                            Vector3 wallClimbDirectionNormalized;
-                                            DrainClimbCharge(deltaTime);
-
-                                            currentVelocity *= (1f / (1f + (WallDrag * deltaTime))); //Experimental
-
-                                            if (_moveInputRawXZY.sqrMagnitude > 0f)
-                                            {
-                                                //if (inputAgainstWall >= 0f) 
-
-                                                wallClimbDirectionNormalized = Vector3.ProjectOnPlane(_moveInputRawXZY, _wallNormal).normalized;
-
-                                                gravityVelocity = Vector3.zero;
-                                            }
-                                            else
-                                            {
-                                                wallClimbDirectionNormalized = Vector3.zero;
-                                                gravityVelocity = 0.05f * deltaTime * Gravity;
-                                            }
-
-                                            wallClimbAdditive = wallClimbDirectionNormalized * WallClimbSpeedMax;
-
-
-                                            currentVelocity += wallClimbAdditive;
-                                            currentVelocity += gravityVelocity;
-                                            //    currentVelocity = Vector3.Lerp(currentVelocity, targetMovementVelocity, 1f - Mathf.Exp(-WallClimbMovementSharpness * deltaTime));
-                                            //}
-                                            //else
-                                            //{
-                                            //    currentVelocity = Vector3.Lerp(currentVelocity, Vector3.zero, 1f - Mathf.Exp(-WallClimbMovementSharpness * deltaTime));
-                                            //}
-
-                                        }
-                                        else
-                                        {
-                                            //We need to add input controls here
-                                            if (inputAgainstWall >= 0f) //More input towards wall results in more resistance
-                                            {
-                                                gravityVelocity = (1f - (inputAgainstWall*WallInputControlledTractionMax)) * deltaTime * Gravity; //The higher input against wall, the closer () is to 0 * gravity
-                                            }
-                                            else
-                                            {
-                                                gravityVelocity = Gravity * deltaTime;
-                                            }
-                                            //Do sliding off wall
-
-                                            currentVelocity += GetAddedAirVelocity(ref currentVelocity, deltaTime);
-                                            currentVelocity += gravityVelocity;
-
-                                        }
-                                        //addedWallVelocity = GetAddedWallRunVelocity(ref currentVelocity, deltaTime); //Need to change moveinput so that it takes into account x input- Holden
-
+                                        targetMovementVelocity = Vector3.right * wallClimbInputDirectionNormalized.x * WallClimbSpeedFrontHorizontalMax;
+                                        targetMovementVelocity *= (1f / (1f + (WallDrag * deltaTime)));
+                                        gravityVelocity = Vector3.zero;                                        
+                                        DrainClimbCharge(deltaTime);
                                         AddVelocity(_wallNormal * -WallAttractForce * deltaTime);
+                                        _isWallRunning = true;
+                                        float currentVelocityMagnitudeDirty = currentVelocity.magnitude + 0.1f;
 
-                                        break;
-                                    }
-                                case CharacterWallLookState.Away: //Start sliding off wall
-                                    {
-                                        break;
-                                    }
-                                case CharacterWallLookState.Right:
-                                case CharacterWallLookState.Left:
-                                    {
-                                        float wallDrag = 0f;
-                                        Vector3 wallRunDirectionNormalized = Vector3.ProjectOnPlane(Motor.CharacterForward, _wallNormal).normalized;                                        
-                                        float inputTowardsMovement = Vector3.Dot(wallRunDirectionNormalized, _moveInputVector); //Between 1 and -1
-                                        Vector3 addedInputVector;
-                                        float inputAgainstWall = Vector3.Dot(_moveInputVector, -_wallNormal);
-
-                                        if (_wantsToClimb && CanClimb())
+                                        if (currentVelocityMagnitudeDirty >= WallClimbSpeedFrontVerticalTwoMax)
                                         {
-                                            DrainClimbCharge(deltaTime);
-
-                                            wallDrag = (1f / (1f + (ForcedWallDrag * deltaTime)));
-                                            gravityVelocity = 0.05f * deltaTime * Gravity;
-
-                                        }//Next time we'll implement magnet controls for wall running
-                                        else // I want to add a little boost to forward momentum if we're running along a wall even without magnet. -H
-                                        {
-
-                                            if (inputAgainstWall > 0f) //More input towards wall results in more resistance
-                                            {
-                                                gravityVelocity = (1f - (inputAgainstWall * WallInputControlledTractionMax)) * deltaTime * Gravity; //The higher input against wall, the closer () is to 0 * gravity
-                                            }
-                                            else
-                                            {
-                                                gravityVelocity = Gravity * deltaTime;
-                                            }
-                                            //Do sliding off wall
-
-                                            if (inputTowardsMovement > 0f)
-                                            {
-                                                wallRunBoostAdditive = wallRunDirectionNormalized * WallInputControlledSpeedMax * (inputTowardsMovement/1f) * deltaTime;
-                                            }
-                                            else
-                                            {
-                                                wallRunBoostAdditive = Vector3.zero;
-                                            }
-
-
-                                            //currentVelocity += GetAddedAirVelocity(ref currentVelocity, deltaTime); //This is causing issues. Reverse gravity thing ////////////////
-                                            
-
-                                            if (_moveInputVector.sqrMagnitude > 0f)
-                                            {
-                                                //addedInputVector = wallRunDirectionNormalized * inputTowardsMovement * deltaTime;
-                                                addedWallRunVelocity = wallRunDirectionNormalized * WallRunAccelerationSpeed * deltaTime;
-                                                addedWallRunVelocity += wallRunBoostAdditive;
-
-                                                Vector3 currentVelocityOnInputsPlane = Vector3.ProjectOnPlane(currentVelocity, Motor.CharacterUp);
-
-                                                // Limit air velocity from inputs
-                                                if (currentVelocityOnInputsPlane.magnitude < MaxWallRunSpeed)
-                                                {
-                                                    // clamp addedVel to make total vel not exceed max vel on inputs plane
-                                                    Vector3 newTotal = Vector3.ClampMagnitude(currentVelocityOnInputsPlane + addedWallRunVelocity, MaxWallRunSpeed); //This returns a negative vector we can't allow that -H
-                                                    addedWallRunVelocity = newTotal - currentVelocityOnInputsPlane;
-
-                                                    if (Vector3.Dot(newTotal, wallRunDirectionNormalized) < -0.7f)
-                                                    {
-                                                        //AddVelocity(_wallNormal * WallPushForce * deltaTime);
-                                                    }
-                                                }
-                                                else //This is the air strafing stuff
-                                                {
-                                                    //// Make sure added vel doesn't go in the direction of the already-exceeding velocity. This make it so you can only input right and left I think -H
-                                                    //if (Vector3.Dot(currentVelocityOnInputsPlane, addedWallRunVelocity) > 0f)
-                                                    //{
-                                                    //    addedWallRunVelocity = Vector3.ProjectOnPlane(addedWallRunVelocity, currentVelocityOnInputsPlane.normalized);
-                                                    //} //Pointless. Need to add left and right
-
-                                                    //if (Vector3.Dot(currentVelocity+addedWallRunVelocity, wallRunDirectionNormalized) < -0.7f)
-                                                    //{
-                                                    //    AddVelocity(_wallNormal * WallPushForce * deltaTime);
-                                                    //}
-                                                }
-                                            }
-                                            else
-                                            {
-                                                //What do we do if no inputs.
-                                            }
-
-                                            wallDrag = (1f / (1f + (WallDrag * deltaTime)));
+                                            _movementSpeedFloat = 1f;
+                                            targetMovementVelocity += Vector3.up * Mathf.Max(wallClimbInputDirectionNormalized.y, 0.8f) * WallClimbSpeedFrontVerticalTwoMax;
                                         }
+                                        else if (currentVelocityMagnitudeDirty >= WallClimbSpeedFrontVerticalOneMax) //play boosting -> boosting
+                                        {
+                                            _movementSpeedFloat = (currentVelocityMagnitudeDirty - WallClimbSpeedFrontVerticalOneMax) / (WallClimbSpeedFrontVerticalTwoMax - WallClimbSpeedFrontVerticalOneMax);
+                                            targetMovementVelocity += Vector3.up * Mathf.Max(wallClimbInputDirectionNormalized.y, 0.8f) * WallClimbSpeedFrontVerticalTwoMax;
+                                        }
+                                        else //Play running -> boosting
+                                        {
+                                            _movementSpeedFloat = 0f; // we want an extra state here this code is
+                                            targetMovementVelocity += Vector3.up * Mathf.Max(wallClimbInputDirectionNormalized.y, 0.8f) * WallClimbSpeedFrontVerticalOneMax;
+                                        }
+                                        targetMovementVelocity *= (1f / (1f + (WallDrag * deltaTime)));
 
-                                        currentVelocity += addedWallRunVelocity;
-                                        currentVelocity *= wallDrag;
+                                    }                                        
+                                    else
+                                    {
 
+                                        AddVelocity(_wallNormal.normalized * WallRepulseForce * Time.deltaTime);
+                                        gravityVelocity = deltaTime * Gravity;
+                                        targetMovementVelocity = currentVelocity + GetAddedAirVelocity(ref currentVelocity, deltaTime);
+                                        _isWallRunning = false;
+                                    }                                
+                                    currentVelocity = Vector3.Lerp(currentVelocity, targetMovementVelocity, 1f - Mathf.Exp(-StableMovementSharpness * deltaTime));
+                                    currentVelocity += gravityVelocity;
+
+                                    break;
+                                }
+                            case CharacterWallLookState.Away: //Start sliding off wall
+                                {
+                                    break;
+                                }
+                            case CharacterWallLookState.Left:
+                            case CharacterWallLookState.Right:
+                                {                                    
+                                    Vector3 wallRunDirectionNormalized = Vector3.ProjectOnPlane(Motor.CharacterForward, _wallNormal).normalized;
+                                    float inputTowardsMovement = Vector3.Dot(_moveInputVector, wallRunDirectionNormalized);
+
+
+                                    if (CanClimb() && inputTowardsMovement > -0.2f) //If we are above a certain velocity slide on the wall instead of climb. Uncontrollable velocity  
+                                    {                                        
+                                        
+                                        gravityVelocity = Vector3.zero;
+                                        DrainClimbCharge(deltaTime);
                                         AddVelocity(_wallNormal * -WallAttractForce * deltaTime);
-
                                         
 
-                                        break;
-                                    }                               
-                            }//End of switch
+                                        float currentVelocityMagnitudeDirty = currentVelocity.magnitude + 0.1f;
 
-                            
-                            // Drag
-                            
+                                        if (currentVelocityMagnitudeDirty >= MaxWallSpeedLRTwo)
+                                        {
+                                            _movementSpeedFloat = 1f;
+                                            targetMovementVelocity = wallRunDirectionNormalized * MaxWallSpeedLRTwo;
+                                        }
+                                        else if (currentVelocityMagnitudeDirty >= MaxWallSpeedLROne) //play boosting -> boosting
+                                        {
+                                            _movementSpeedFloat = (currentVelocityMagnitudeDirty - MaxWallSpeedLROne) / (MaxWallSpeedLRTwo - MaxWallSpeedLROne); ;
+                                            targetMovementVelocity = wallRunDirectionNormalized * MaxWallSpeedLRTwo;
+                                        }
+                                        else //Play running -> boosting
+                                        {
+                                            _movementSpeedFloat = 0f; // we want an extra state here this code is
+                                            targetMovementVelocity = wallRunDirectionNormalized * MaxWallSpeedLROne;
+                                        }
+                                        targetMovementVelocity *= (1f / (1f + (WallDrag * deltaTime)));
 
-                            
-                            //currentVelocity += wallRunBoostAdditive;
-                            currentVelocity += gravityVelocity;
+                                        AnimSetIsWallRunLeftBool(CurrentCharacterWallLookState == CharacterWallLookState.Left);
+                                        _isWallRunning = true;
+                                    }
+                                    else
+                                    {
 
+                                        AddVelocity(_wallNormal.normalized * WallRepulseForce * Time.deltaTime);
+                                        gravityVelocity = deltaTime * Gravity;
+                                        targetMovementVelocity = currentVelocity + GetAddedAirVelocity(ref currentVelocity, deltaTime);
+                                        _isWallRunning = false;
+                                    }
+                                    currentVelocity = Vector3.Lerp(currentVelocity, targetMovementVelocity, 1f - Mathf.Exp(-StableMovementSharpness * deltaTime));
+                                    currentVelocity += gravityVelocity;
 
-                        }
-                        else
-                        {
-                            // Apply added velocity
-                            currentVelocity += GetAddedAirVelocity(ref currentVelocity, deltaTime);
-
-                            // Gravity
-                            currentVelocity += Gravity * deltaTime;
-
-                            // Drag
-                            currentVelocity *= (1f / (1f + (Drag * deltaTime)));
+                                    break;
+                                }
                         }
                         break;
                     }
-                
-
             }
 
             
@@ -804,20 +741,30 @@ namespace KinematicCharacterController.Examples
             if (_wantsToDash && CanDash())
             {
 
-                if (_moveInputVector.magnitude > 0.1)
+                if (_isAimingDash)
                 {
-                    _dashVector = _moveInputVector.normalized * DashForce;
+                    _dashVector = _lookInputNonPlanarVector.normalized * DashForce;
+                    //if (currentVelocity.magnitude > 0.1)
+                    //{
+                    //    _dashVector = currentVelocity.normalized * DashForce;
+                    //}
+                    //else
+                    //{
+                    //    _dashVector = Motor.CharacterForward.normalized * DashForce;
+                    //}               
                 }
                 else
                 {
-                    if (currentVelocity.magnitude > 0.1) //CV is above 0
+                    
+                    if (_moveInputVector.magnitude > 0.1)
                     {
-                        _dashVector = currentVelocity.normalized * DashForce;
+                        _dashVector = _moveInputVector.normalized * DashForce;
                     }
                     else
                     {
                         _dashVector = Motor.CharacterForward.normalized * DashForce;
                     }
+                    
                 }
                 _wantsToDash = false;
                 _isDashing = true;
@@ -841,7 +788,6 @@ namespace KinematicCharacterController.Examples
                     _isExitingDash = true;
                     _dashSpeedFreezeTimer.ResetTimer();
                     targetDashMovementVelocity = Vector3.zero;
-                    Debug.Log("Done dashing");
                 }
                 currentVelocity = Vector3.Lerp(currentVelocity, targetDashMovementVelocity, 1f - Mathf.Exp(-StableMovementSharpness * deltaTime));
             }
@@ -856,7 +802,6 @@ namespace KinematicCharacterController.Examples
                 {
                     _isExitingDash = false;
                     _isRunning = true;
-                    Debug.Log("Done freezing");
                 }
                 
             }
@@ -868,19 +813,17 @@ namespace KinematicCharacterController.Examples
             {
                 // See if we actually are allowed to jump _timeSinceLastAbleToJump <= JumpPostGroundingGraceTime))
 
-                Vector3 jumpDirection = GetJumpDirection();
+                Vector3 jumpDirection = GetJumpDirectionNormalized();
 
                 // Makes the character skip ground probing/snapping on its next update. 
                 // If this line weren't here, the character would remain snapped to the ground when trying to jump. Try commenting this line out and see.
                 Motor.ForceUnground();
-                GroundStateTransitionTo(CharacterGroundedState.Airborne);
+                CharacterGroundedStateTransitionTo(CharacterGroundedState.Airborne);
                 SetAnimatorJumpTrigger();
                 ResetAnimatorLandStableTrigger();
 
                 // Add to the return velocity and reset jump state
-                //currentVelocity = Quaternion.LookRotation(_moveInputVector, Motor.CharacterUp) * currentVelocity;
                 currentVelocity += (jumpDirection * JumpUpSpeed) - Vector3.Project(currentVelocity, Motor.CharacterUp);
-                //currentVelocity += (_moveInputVector * JumpForwardMomentumScalar);
                 _jumpCountCurrent--;
                 _jumpRequested = false;
                 _jumpConsumed = true;
@@ -912,9 +855,7 @@ namespace KinematicCharacterController.Examples
 
             _previousVelocity = currentVelocity;
 
-
-            UpdateAnimatorIsClimbingBool();
-            UpdateAnimatorIsTouchingWallBool();
+            UpdateAnimatorIsWallRunningBool();
             UpdateAnimatorSpeedFloat();
             SetAnimatorMagnitudeFloat(currentVelocity.magnitude);
             SetAnimatorVelocityVector(ref currentVelocity);
@@ -1002,7 +943,7 @@ namespace KinematicCharacterController.Examples
             // Handle landing and leaving ground
             if (Motor.GroundingStatus.IsStableOnGround && !Motor.LastGroundingStatus.IsStableOnGround)
             {
-                GroundStateTransitionTo(CharacterGroundedState.GroundedStable);
+                CharacterGroundedStateTransitionTo(CharacterGroundedState.GroundedStable);
             }
             else if (!Motor.GroundingStatus.IsStableOnGround && Motor.LastGroundingStatus.IsStableOnGround)
             {
@@ -1016,11 +957,11 @@ namespace KinematicCharacterController.Examples
                         {
                             if (Motor.GroundingStatus.FoundAnyGround)
                             {
-                                GroundStateTransitionTo(CharacterGroundedState.GroundedUnstable);
+                                CharacterGroundedStateTransitionTo(CharacterGroundedState.GroundedUnstable);
                             }
                             else
                             {
-                                GroundStateTransitionTo(CharacterGroundedState.Airborne);
+                                CharacterGroundedStateTransitionTo(CharacterGroundedState.Airborne);
                             }
                         }
                         break;
@@ -1029,11 +970,11 @@ namespace KinematicCharacterController.Examples
                     {
                         if (Motor.GroundingStatus.IsStableOnGround)
                         {
-                            GroundStateTransitionTo(CharacterGroundedState.GroundedStable);
+                            CharacterGroundedStateTransitionTo(CharacterGroundedState.GroundedStable);
                         }
                         else if (!Motor.GroundingStatus.FoundAnyGround)
                         {
-                            GroundStateTransitionTo(CharacterGroundedState.Airborne);
+                            CharacterGroundedStateTransitionTo(CharacterGroundedState.Airborne);
                         }
                         break;
                     }
@@ -1041,11 +982,11 @@ namespace KinematicCharacterController.Examples
                     {
                         if (Motor.GroundingStatus.IsStableOnGround)
                         {
-                            GroundStateTransitionTo(CharacterGroundedState.GroundedStable);
+                            CharacterGroundedStateTransitionTo(CharacterGroundedState.GroundedStable);
                         }
                         else if (Motor.GroundingStatus.FoundAnyGround)
                         {
-                            GroundStateTransitionTo(CharacterGroundedState.GroundedUnstable);
+                            CharacterGroundedStateTransitionTo(CharacterGroundedState.GroundedUnstable);
                         }
                         break;
                     }
@@ -1069,6 +1010,14 @@ namespace KinematicCharacterController.Examples
 
         public void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
         {
+            _currentWallCollider = hitCollider;
+            if (_currentWallCollider.gameObject.layer == 6) //Wall layer
+            {
+                _wallNormal = hitNormal;
+
+                _wallHitCheckTimer.ResetTimer();
+                StartedTouchingWall();
+            }
         }
 
         public void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
@@ -1087,15 +1036,24 @@ namespace KinematicCharacterController.Examples
 
         private void StartedTouchingWall()
         {
-            _isTouchingWall = true;
-            _isWallTransition = true;
+            CharacterGroundedStateTransitionTo(CharacterGroundedState.Wall);
             EvalaluateWallLookState(); //Update CharacterWallLookState
         }
 
         private void StoppedTouchingWall()
         {
-            _isTouchingWall = false;
-            _isWallTransition = false;
+            if (Motor.GroundingStatus.IsStableOnGround)
+            {
+                CharacterGroundedStateTransitionTo(CharacterGroundedState.GroundedStable);
+            }
+            else if (Motor.GroundingStatus.FoundAnyGround)
+            {
+                CharacterGroundedStateTransitionTo(CharacterGroundedState.GroundedUnstable);                
+            }
+            else
+            {
+                CharacterGroundedStateTransitionTo(CharacterGroundedState.Airborne);
+            }
             ResetWallLookState();
         }
 
@@ -1146,7 +1104,7 @@ namespace KinematicCharacterController.Examples
             CurrentCharacterState = newState;
         }
 
-        protected void GroundStateTransitionTo(CharacterGroundedState newState)
+        protected void CharacterGroundedStateTransitionTo(CharacterGroundedState newState)
         {
             if (CurrentCharacterGroundedState != newState)
             {
@@ -1154,6 +1112,11 @@ namespace KinematicCharacterController.Examples
                 {
                     case CharacterGroundedState.GroundedStable:
                         {
+                            break;
+                        }
+                    case CharacterGroundedState.Wall:
+                        {
+                            _isWallRunning = false;                            
                             break;
                         }
                     default:
@@ -1176,6 +1139,12 @@ namespace KinematicCharacterController.Examples
                             SetAnimatorLandStableTrigger();
                             _currentClimbCharge = MaxClimbCharge;
                         
+                            break;
+                        }
+                    case CharacterGroundedState.Wall:
+                        {
+                            _isDashing = false;
+                            Motor.ForceUnground();
                             break;
                         }
                     default:
@@ -1221,8 +1190,8 @@ namespace KinematicCharacterController.Examples
             }
             else
             {
-                Debug.Log("No state reached. Returning default.");
-                CurrentCharacterWallLookState = CharacterWallLookState.Default;
+                Debug.Log("No state reached. Returning no wall.");
+                CurrentCharacterWallLookState = CharacterWallLookState.NoWall;
             }
             
             if (_previousCharacterWallLookState != CurrentCharacterWallLookState)
@@ -1260,10 +1229,10 @@ namespace KinematicCharacterController.Examples
                 Vector3 currentVelocityOnInputsPlane = Vector3.ProjectOnPlane(currentVelocity, Motor.CharacterUp);
 
                 // Limit air velocity from inputs
-                if (currentVelocityOnInputsPlane.magnitude < MaxWallRunSpeed)
+                if (currentVelocityOnInputsPlane.magnitude < MaxWallSpeedLROne)
                 {
                     // clamp addedVel to make total vel not exceed max vel on inputs plane
-                    Vector3 newTotal = Vector3.ClampMagnitude(currentVelocityOnInputsPlane + addedWallRunVelocity, MaxWallRunSpeed);
+                    Vector3 newTotal = Vector3.ClampMagnitude(currentVelocityOnInputsPlane + addedWallRunVelocity, MaxWallSpeedLROne);
                     addedWallRunVelocity = newTotal - currentVelocityOnInputsPlane;
                 }
                 else
@@ -1345,7 +1314,7 @@ namespace KinematicCharacterController.Examples
             return addedVelocity;
         }        
 
-        protected Vector3 GetJumpDirection()
+        protected Vector3 GetJumpDirectionNormalized()
         {
             Vector3 jumpDirection;
 
@@ -1361,6 +1330,12 @@ namespace KinematicCharacterController.Examples
                         jumpDirection = Motor.GroundingStatus.GroundNormal;
                         break;
                     }
+                case CharacterGroundedState.Wall:
+                    {
+                        
+                        jumpDirection = _wallNormal + Motor.CharacterUp;
+                        break;
+                    }
                 case CharacterGroundedState.Airborne:
                 default:
                     {
@@ -1369,7 +1344,7 @@ namespace KinematicCharacterController.Examples
                     }
             }
 
-            return jumpDirection;
+            return jumpDirection.normalized;
         }
 
         protected Vector3 GetWallRunDirection()
@@ -1385,11 +1360,6 @@ namespace KinematicCharacterController.Examples
         public float GetRunTimer()
         {
             return _currentRunCharge;
-        }
-
-        public bool IsTouchingWall()
-        {
-            return _isTouchingWall;
         }
 
         private void DrainClimbCharge(float deltaTime)
@@ -1430,7 +1400,12 @@ namespace KinematicCharacterController.Examples
 
         private bool CanClimb()
         {
-            if (_isTouchingWall && (_currentClimbCharge > 0f))
+            Vector3 previousVelocityOnInputsPlane = Vector3.ProjectOnPlane(_previousVelocity, Motor.CharacterUp);
+            if (previousVelocityOnInputsPlane.magnitude > WallClimbMinimumNeededSpeed && (_currentClimbCharge > 0f))
+            {
+                return true;
+            }
+            else if (_currentClimbCharge > 0f && _isWallRunning)
             {
                 return true;
             }
@@ -1456,14 +1431,19 @@ namespace KinematicCharacterController.Examples
             return false;
         }
 
-        private void UpdateAnimatorIsClimbingBool()
+        public bool DebugGetIsClimbing()
         {
-            _animationParameterWrapperScript.SetIsClimbingBool(_wantsToClimb && CanClimb());
+            return _isWallRunning;
         }
 
-        private void UpdateAnimatorIsTouchingWallBool()
+        private void UpdateAnimatorIsWallRunningBool()
         {
-            _animationParameterWrapperScript.SetIsTouchingWallBool(_isTouchingWall);
+            _animationParameterWrapperScript.SetIsWallRunningBool(_isWallRunning);
+        }
+
+        private void AnimSetIsWallRunLeftBool(bool isWallRunLeft)
+        {
+            _animationParameterWrapperScript.SetIsWallRunLeftBool(isWallRunLeft);
         }
 
         private void UpdateAnimatorGroundedStateEnum()
