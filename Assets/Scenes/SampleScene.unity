@@ -1078,7 +1078,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh29234
+  m_Name: pb_Mesh29258
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -1974,7 +1974,7 @@ Mesh:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: pb_Mesh29160
+  m_Name: pb_Mesh29174
   serializedVersion: 10
   m_SubMeshes:
   - serializedVersion: 2
@@ -3552,7 +3552,7 @@ MonoBehaviour:
   m_stencilTestOptions: 0
 --- !u!119 &1163853522
 Projector:
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 2
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
@@ -9109,10 +9109,10 @@ MonoBehaviour:
   WallClimbSpeedFrontHorizontalMax: 8
   WallClimbSpeedFrontVerticalOneMax: 15
   WallClimbSpeedFrontVerticalTwoMax: 20
-  WallAttractForce: 4
-  WallRepulseForce: 1
-  WallHitFixedUpdateGraceCount: 4
-  xAngleOffset: 50
+  WallAttractForce: 50
+  WallRepulseForce: 0
+  WallHitFixedUpdateGraceCount: 5
+  xAngleOffset: -50
   MaxClimbCharge: 15
   ClimbDrainRate: 10
   MaxRunCharge: 300

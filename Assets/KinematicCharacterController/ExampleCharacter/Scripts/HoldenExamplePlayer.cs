@@ -110,6 +110,7 @@ namespace KinematicCharacterController.Examples
                 CharacterCamera.PlanarDirection = Vector3.ProjectOnPlane(CharacterCamera.PlanarDirection, Character.Motor.CharacterUp).normalized;
             }
 
+            //Character.UpdateCameraFollowPointTransform(Time.deltaTime);
             HandleCameraInput();
         }
 
