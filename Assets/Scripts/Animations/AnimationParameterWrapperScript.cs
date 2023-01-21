@@ -4,7 +4,8 @@ using UnityEngine;
 [Serializable]
 class AnimationParameterWrapperScript : MonoBehaviour
 {
-    [SerializeField] Animator _animator;
+    [SerializeField] Animator _animatorPlayerMesh;
+    [SerializeField] Animator _animatorPlayerRoot;
     private int _animVelocityXFloatID, _animVelocityYFloatID, _animVelocityZFloatID, _animSpeedFloatID, _animDashXFloatID, _animDashYFloatID, _animDashZFloatID, _animVelocityMagnitudeFloatID;
     private int _animAttack1HeldBoolID, _animIsTouchingWallBoolID, _animIsWallRunningBoolID, _animIsRunningBoolID, _animIsWallRunLeftBoolID;
     private int _animGroundedStateEnumID, _animWallLookStateEnumID;
@@ -40,127 +41,137 @@ class AnimationParameterWrapperScript : MonoBehaviour
 
     public void SetVelocityX(float animatorVelocityX, float velocityDampTime=0.1f)
     {
-        _animator.SetFloat(_animVelocityXFloatID, animatorVelocityX, velocityDampTime, Time.deltaTime);
+        _animatorPlayerMesh.SetFloat(_animVelocityXFloatID, animatorVelocityX, velocityDampTime, Time.deltaTime);
     }
 
     public void SetVelocityY(float animatorVelocityY, float velocityDampTime = 0.1f)
     {
-        _animator.SetFloat(_animVelocityYFloatID, animatorVelocityY, velocityDampTime, Time.deltaTime);
+        _animatorPlayerMesh.SetFloat(_animVelocityYFloatID, animatorVelocityY, velocityDampTime, Time.deltaTime);
     }
 
     public void SetVelocityZ(float animatorVelocityZ, float velocityDampTime = 0.1f)
     {
-        _animator.SetFloat(_animVelocityZFloatID, animatorVelocityZ, velocityDampTime, Time.deltaTime);
+        _animatorPlayerMesh.SetFloat(_animVelocityZFloatID, animatorVelocityZ, velocityDampTime, Time.deltaTime);
     }
 
     public void SetVelocityMagnitude(float magnitude, float velocityDampTime = 0.1f)
     {
-        _animator.SetFloat(_animVelocityMagnitudeFloatID, magnitude, velocityDampTime, Time.deltaTime);
+        _animatorPlayerMesh.SetFloat(_animVelocityMagnitudeFloatID, magnitude, velocityDampTime, Time.deltaTime);
     }
 
     public void SetDashX(float animatorDashX, float velocityDampTime = 0.1f)
     {
-        _animator.SetFloat(_animDashXFloatID, animatorDashX, velocityDampTime, Time.deltaTime);
+        _animatorPlayerMesh.SetFloat(_animDashXFloatID, animatorDashX, velocityDampTime, Time.deltaTime);
     }
 
     public void SetDashY(float animatorDashY, float velocityDampTime = 0.1f)
     {
-        _animator.SetFloat(_animDashYFloatID, animatorDashY, velocityDampTime, Time.deltaTime);
+        _animatorPlayerMesh.SetFloat(_animDashYFloatID, animatorDashY, velocityDampTime, Time.deltaTime);
     }
 
     public void SetDashZ(float animatorDashZ, float velocityDampTime = 0.1f)
     {
-        _animator.SetFloat(_animDashZFloatID, animatorDashZ, velocityDampTime, Time.deltaTime);
+        _animatorPlayerMesh.SetFloat(_animDashZFloatID, animatorDashZ, velocityDampTime, Time.deltaTime);
     }
 
     public void SetSpeedFloat(float value, float velocityDampTime = 0.1f)
     {
-        _animator.SetFloat(_animSpeedFloatID, value, velocityDampTime, Time.deltaTime);
+        _animatorPlayerMesh.SetFloat(_animSpeedFloatID, value, velocityDampTime, Time.deltaTime);
     }
 
     public void SetIsWallRunningBool(bool isClimbing)
     {
-        _animator.SetBool(_animIsWallRunningBoolID, isClimbing);
+        _animatorPlayerMesh.SetBool(_animIsWallRunningBoolID, isClimbing);
+    }
+
+    public void SetIsWallRunningBool2(bool isClimbing)
+    {
+        _animatorPlayerRoot.SetBool(_animIsWallRunningBoolID, isClimbing);
     }
 
     public void SetIsTouchingWallBool(bool isTouchingWall)
     {
-        _animator.SetBool(_animIsTouchingWallBoolID, isTouchingWall);
+        _animatorPlayerMesh.SetBool(_animIsTouchingWallBoolID, isTouchingWall);
     }
 
     public void SetIsWallRunLeftBool(bool isWallRunLeft)
     {
-        _animator.SetBool(_animIsWallRunLeftBoolID, isWallRunLeft);
+        _animatorPlayerMesh.SetBool(_animIsWallRunLeftBoolID, isWallRunLeft);
     }
 
     public void SetAttack1State(bool isHeld)
     {
-        _animator.SetBool(_animAttack1HeldBoolID, isHeld);
+        _animatorPlayerMesh.SetBool(_animAttack1HeldBoolID, isHeld);
     }
 
     public void SetGroundedStateEnum(int enumIndex)
     {
-        _animator.SetInteger(_animGroundedStateEnumID, enumIndex);
+        _animatorPlayerMesh.SetInteger(_animGroundedStateEnumID, enumIndex);
     }
 
     public void SetWallLookStateEnum(int enumIndex)
     {
-        _animator.SetInteger(_animWallLookStateEnumID, enumIndex);
+        _animatorPlayerMesh.SetInteger(_animWallLookStateEnumID, enumIndex);
+    }
+
+    public void SetWallLookStateEnum2(int enumIndex)
+    {
+        _animatorPlayerRoot.SetInteger(_animWallLookStateEnumID, enumIndex);
     }
 
     public void SetIsRunningBool(bool value)
     {
-        _animator.SetBool(_animIsRunningBoolID, value);
+        _animatorPlayerMesh.SetBool(_animIsRunningBoolID, value);
     }
 
     public void SetGroundedStateTrigger()
     {
-        _animator.SetTrigger(_animUpdateGroundedStateTriggerID);
+        _animatorPlayerMesh.SetTrigger(_animUpdateGroundedStateTriggerID);
     }
 
     public void SetWallLookStateTrigger()
     {
-        _animator.SetTrigger(_animUpdateWallLookStateTriggerID);
+        _animatorPlayerMesh.SetTrigger(_animUpdateWallLookStateTriggerID);
     }
 
     public void ResetWallLookStateTrigger()
     {
-        _animator.ResetTrigger(_animUpdateWallLookStateTriggerID);
+        _animatorPlayerMesh.ResetTrigger(_animUpdateWallLookStateTriggerID);
     }
 
     public void SetJumpTrigger()
     {
-        _animator.SetTrigger(_animJumpTriggerID);
+        _animatorPlayerMesh.SetTrigger(_animJumpTriggerID);
     }
 
     public void SetDashTrigger()
     {
-        _animator.SetTrigger(_animDashTriggerID);
+        _animatorPlayerMesh.SetTrigger(_animDashTriggerID);
     }
 
     public void SetLandStableTrigger()
     {
-        _animator.SetTrigger(_animLandStableTriggerID);
+        _animatorPlayerMesh.SetTrigger(_animLandStableTriggerID);
     }
 
     public void ResetLandStableTrigger()
     {
-        _animator.ResetTrigger(_animLandStableTriggerID);
+        _animatorPlayerMesh.ResetTrigger(_animLandStableTriggerID);
     }
 
     public void SetAnimatorFloat(int animVarHash, float value)
     {
-        _animator.SetFloat(animVarHash, value);
+        _animatorPlayerMesh.SetFloat(animVarHash, value);
     }
 
     public void SetAnimatorBool(int animVarHash, bool value)
     {
-        _animator.SetBool(animVarHash, value);
+        _animatorPlayerMesh.SetBool(animVarHash, value);
     }
 
     public void SetAnimatorInt(int animVarHash, int value)
     {
-        _animator.SetInteger(animVarHash, value);
+        _animatorPlayerMesh.SetInteger(animVarHash, value);
     }
 }
 

@@ -65,13 +65,6 @@ namespace KinematicCharacterController.Examples
         TowardsVelocityOnInputsPlane
     }
 
-    public struct CustomTransformState //Project your capsule positions onto the wall
-    {
-        public Vector3 CustomUp;        
-        public Vector3 CustomRight;
-        public Vector3 CustomForward;
-    }
-
     public class HoldenExampleCharacterController : MonoBehaviour, ICharacterController
     {
         public KinematicCharacterMotor Motor;
@@ -201,9 +194,10 @@ namespace KinematicCharacterController.Examples
         Vector3 _lookInputNonPlanarVector;
         private bool _isWallRunning;
         private Vector3 _wallHitPoint;
-        CustomTransformState _wallPlayerProjectedTransform;
         private bool _wantsToTest;
-        
+        private bool _isWallForcedJump;
+
+
 
         const float SIXTYFPSFRAMEINTERVAL = 0.01667f;
 
@@ -218,7 +212,7 @@ namespace KinematicCharacterController.Examples
         [SerializeField] PlayerAttackScript _playerAttackScript;
         [SerializeField] PlayerMovementScript _playerMovementScript;
         [SerializeField] AnimationEventWrapperScript _animationEventWrapperScript;
-        [SerializeField] AnimationParameterWrapperScript _animationParameterWrapperScript;
+        [SerializeField] AnimationParameterWrapperScript _playerAnimationParameterWrapperScript;
 
         private void Awake()
         {
@@ -271,12 +265,12 @@ namespace KinematicCharacterController.Examples
 
             if (CurrentCharacterGroundedState == CharacterGroundedState.Wall)
             {
-                cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.forward, _wallPlayerProjectedTransform.CustomUp).normalized;
+                cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.forward, Motor.CharacterUp).normalized;
                 if (cameraPlanarDirection.sqrMagnitude == 0f)
                 {
-                    cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.up, _wallPlayerProjectedTransform.CustomUp).normalized;
+                    cameraPlanarDirection = Vector3.ProjectOnPlane(inputs.CameraRotation * Vector3.up, Motor.CharacterUp).normalized;
                 }
-                cameraPlanarRotation = Quaternion.LookRotation(cameraPlanarDirection, _wallPlayerProjectedTransform.CustomUp);
+                cameraPlanarRotation = Quaternion.LookRotation(cameraPlanarDirection, Motor.CharacterUp);
             }
             else
             {
@@ -430,44 +424,25 @@ namespace KinematicCharacterController.Examples
 
             if (CurrentCharacterGroundedState == CharacterGroundedState.Wall)
             {
-                Vector3 wallRightDirection = Vector3.Cross(_wallPlayerProjectedTransform.CustomUp, _wallNormal);
+                Vector3 wallRightDirection = Vector3.Cross(Motor.CharacterUp, _wallNormal);
 
                 switch (CurrentCharacterWallLookState)
                 {
                     case CharacterWallLookState.Forward:
                         {
-                            //currentRotation = Quaternion.LookRotation(-_wallNormal, _wallPlayerProjectedTransform.CustomUp); REMEMBER TO READD
-                            
-                            //Vector3 initialCharacterBottomHemiCenter = Motor.TransientPosition + (currentUp * Motor.Capsule.radius);
-                            //Motor.SetTransientPosition(initialCharacterBottomHemiCenter + (currentRotation * Vector3.down * Motor.Capsule.radius));
+                            currentRotation = Quaternion.LookRotation(-_wallNormal, Motor.CharacterUp);
                             break;
                         }
 
                     case CharacterWallLookState.Away:
-                        currentRotation = Quaternion.LookRotation(_wallNormal, _wallPlayerProjectedTransform.CustomUp);
+                        currentRotation = Quaternion.LookRotation(_wallNormal, Motor.CharacterUp);
                         break;
                     case CharacterWallLookState.Left:
-                        currentRotation = Quaternion.LookRotation(-wallRightDirection, _wallPlayerProjectedTransform.CustomUp);
+                        currentRotation = Quaternion.LookRotation(-wallRightDirection, Motor.CharacterUp);
                         break;
                     case CharacterWallLookState.Right:
-                        currentRotation = Quaternion.LookRotation(wallRightDirection, _wallPlayerProjectedTransform.CustomUp);
+                        currentRotation = Quaternion.LookRotation(wallRightDirection, Motor.CharacterUp);
                         break;
-                }
-
-                
-
-                if (_isWallRunning) //tHIS CODE HERE PREVENTS YOU FROM BEING ON THE WALL
-                {
-                    //Vector3 wallRunUp = Quaternion.AngleAxis(xAngleOffset, Vector3.right) * Vector3.up;// * Vector3.up;
-                    //currentRotation = Quaternion.FromToRotation(Motor.CharacterUp, wallRunUp) * currentRotation;
-                }
-
-                if (_wantsToTest)
-                {
-                    Vector3 wallRunUp = Quaternion.AngleAxis(xAngleOffset, Vector3.right) * Vector3.up;// * Vector3.up;
-                    currentRotation = Quaternion.FromToRotation(Motor.CharacterUp, wallRunUp) * currentRotation;
-                    //Vector3 initialCharacterBottomHemiCenter = Motor.TransientPosition + (currentUp * Motor.Capsule.radius);
-                    //Motor.SetTransientPosition(initialCharacterBottomHemiCenter + (currentRotation * Vector3.down * Motor.Capsule.radius));
                 }
             }
             else
@@ -689,10 +664,9 @@ namespace KinematicCharacterController.Examples
                                         
                                         targetMovementVelocity = Vector3.right * wallClimbInputDirectionNormalized.x * WallClimbSpeedFrontHorizontalMax;
                                         targetMovementVelocity *= (1f / (1f + (WallDrag * deltaTime)));
-                                        gravityVelocity = Vector3.zero;                                        
+                                        gravityVelocity = Vector3.zero; 
                                         DrainClimbCharge(deltaTime);
-                                        AddVelocity(Vector3.forward * WallAttractForce * deltaTime);
-                                        Debug.Log("Adding: " + _wallPlayerProjectedTransform.CustomForward * -WallAttractForce);
+                                        AddVelocity(-_wallNormal * WallAttractForce * deltaTime);;
                                         _isWallRunning = true;
                                         float currentVelocityMagnitudeDirty = currentVelocity.magnitude + 0.1f;
 
@@ -719,8 +693,9 @@ namespace KinematicCharacterController.Examples
                                     {
                                         
                                         Debug.Log("KICKING OFF");
-                                        Debug.Break();
-                                        AddVelocity(_wallNormal.normalized * WallRepulseForce * Time.deltaTime);
+                                        //Debug.Break();
+                                        //AddVelocity(_wallNormal.normalized * WallRepulseForce * Time.deltaTime);
+                                        _isWallForcedJump = true;
                                         gravityVelocity = deltaTime * Gravity;
                                         targetMovementVelocity = currentVelocity + GetAddedAirVelocity(ref currentVelocity, deltaTime);
                                         _isWallRunning = false;
@@ -779,6 +754,7 @@ namespace KinematicCharacterController.Examples
                                         gravityVelocity = deltaTime * Gravity;
                                         targetMovementVelocity = currentVelocity + GetAddedAirVelocity(ref currentVelocity, deltaTime);
                                         _isWallRunning = false;
+                                        _isWallForcedJump = true;
                                     }
                                     currentVelocity = Vector3.Lerp(currentVelocity, targetMovementVelocity, 1f - Mathf.Exp(-StableMovementSharpness * deltaTime));
                                     currentVelocity += gravityVelocity;
@@ -864,8 +840,13 @@ namespace KinematicCharacterController.Examples
             // Handle jumping
             _jumpedThisFrame = false;
             _timeSinceJumpRequested += deltaTime;
-            if (_jumpRequested && (_jumpCountCurrent > 0))
+            if (_jumpRequested && (_jumpCountCurrent > 0) || _isWallForcedJump)
             {
+
+                if (!_isWallForcedJump)
+                {
+                    _jumpCountCurrent--;
+                }
                 // See if we actually are allowed to jump _timeSinceLastAbleToJump <= JumpPostGroundingGraceTime))
 
                 Vector3 jumpDirection = GetJumpDirectionNormalized();
@@ -879,7 +860,7 @@ namespace KinematicCharacterController.Examples
 
                 // Add to the return velocity and reset jump state
                 currentVelocity += (jumpDirection * JumpUpSpeed) - Vector3.Project(currentVelocity, Motor.CharacterUp);
-                _jumpCountCurrent--;
+                
                 _jumpRequested = false;
                 _jumpConsumed = true;
                 _jumpedThisFrame = true;
@@ -888,7 +869,7 @@ namespace KinematicCharacterController.Examples
                 {
                     _isDashing = false;
                 }
-
+                _isWallForcedJump = false;
             }
 
             if (_wantsToTest)
@@ -1067,55 +1048,58 @@ namespace KinematicCharacterController.Examples
 
         public void OnGroundHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
         {
-            if (hitCollider.gameObject.layer == 6) //Wall layer
-            {
-                _wallHitCheckTimer.ResetTimer();
-                Debug.Log("Resseting timer");
+            //if (hitCollider.gameObject.layer == 6) //Wall layer
+            //{
+            //    if (MathF.Abs(Vector3.Dot(hitNormal.normalized, Motor.CharacterUp)) < 0.2f)
+            //    {
+            //        _wallHitCheckTimer.ResetTimer();
+            //        Debug.Log("Resseting timer");
 
-                if (_currentWallCollider != hitCollider)
-                {
-                    _currentWallCollider = hitCollider;
-                    _wallNormal = hitNormal;
-                    _wallHitPoint = hitNormal;
-                    UpdatePlayerWallTransform();
+            //        if (_currentWallCollider != hitCollider)
+            //        {
+            //            _currentWallCollider = hitCollider;
+            //            _wallNormal = hitNormal;
+            //            _wallHitPoint = hitNormal;
 
-                    
-                    StartedTouchingWall();
-                }
-                else if (_wallNormal != hitNormal)
-                {
-                    _wallNormal = hitNormal;
-                    _wallHitPoint = hitNormal;
-                    UpdatePlayerWallTransform();
-                }
-            }
+
+            //            StartedTouchingWall();
+            //        }
+            //        else if (_wallNormal != hitNormal)
+            //        {
+            //            _wallNormal = hitNormal;
+            //            _wallHitPoint = hitNormal;
+            //        }
+            //    }
+            //}
         }
 
         public void OnMovementHit(Collider hitCollider, Vector3 hitNormal, Vector3 hitPoint, ref HitStabilityReport hitStabilityReport)
         {
+            Debug.Log("movement hit");
             if (hitCollider.gameObject.layer == 6) //Wall layer
             {
-                Debug.Log("Resseting timer");
-                _wallHitCheckTimer.ResetTimer();
+                if (MathF.Abs(Vector3.Dot(hitNormal.normalized, Motor.CharacterUp)) < 0.2f) //
+                {
+                    Debug.Log("Resseting timer");
+                    _wallHitCheckTimer.ResetTimer();
 
-                if (_currentWallCollider != hitCollider)
-                {
-                    _currentWallCollider = hitCollider;
-                    _wallNormal = hitNormal;
-                    _wallHitPoint = hitNormal;
-                    UpdatePlayerWallTransform();
+                    if (_currentWallCollider != hitCollider)
+                    {
+                        _currentWallCollider = hitCollider;
+                        _wallNormal = hitNormal;
+                        _wallHitPoint = hitNormal;
 
-                    //_wallHitCheckTimer.ResetTimer();
-                    StartedTouchingWall();
-                }
-                else if (_wallNormal != hitNormal)
-                {
-                    _wallNormal = hitNormal;
-                    _wallHitPoint = hitNormal;
-                    UpdatePlayerWallTransform();
-                }
-                else
-                {
+                        //_wallHitCheckTimer.ResetTimer();
+                        StartedTouchingWall();
+                    }
+                    else if (_wallNormal != hitNormal)
+                    {
+                        _wallNormal = hitNormal;
+                        _wallHitPoint = hitNormal;
+                    }
+                    else
+                    {
+                    }
                 }
             }
         }
@@ -1201,6 +1185,7 @@ namespace KinematicCharacterController.Examples
                         }
                     case CharacterGroundedState.Wall:
                         {
+                            _isWallForcedJump = false;
                             _currentWallCollider = null;
                             ResetWallLookState();
                             _isWallRunning = false;                            
@@ -1249,10 +1234,10 @@ namespace KinematicCharacterController.Examples
 
         private void EvaluateWallLookState() 
         {
-            float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, _wallPlayerProjectedTransform.CustomForward);
+            float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, Motor.CharacterForward);
             Debug.Log(inputWallNormalDotProduct);
-            Vector3 wallRightDirection = Vector3.Cross(_wallPlayerProjectedTransform.CustomUp, _wallNormal);
-            float inputWallRightDotProduct = Vector3.Dot(wallRightDirection, _wallPlayerProjectedTransform.CustomForward);
+            Vector3 wallRightDirection = Vector3.Cross(Motor.CharacterUp, _wallNormal);
+            float inputWallRightDotProduct = Vector3.Dot(wallRightDirection, Motor.CharacterForward);
             
             //float CharForwardWallDotProduct = Vector3.Dot(_wallNormal, Motor.CharacterForward);
             if (0.8f < inputWallNormalDotProduct)
@@ -1424,7 +1409,7 @@ namespace KinematicCharacterController.Examples
 
         private bool CanClimb()
         {
-            Vector3 previousVelocityOnInputsPlane = Vector3.ProjectOnPlane(_previousVelocity, Vector3.up);
+            Vector3 previousVelocityOnInputsPlane = Vector3.ProjectOnPlane(_previousVelocity, Motor.CharacterUp);
             if (previousVelocityOnInputsPlane.magnitude > WallClimbMinimumNeededSpeed && (_currentClimbCharge > 0f))
             {
                 return true;
@@ -1462,48 +1447,50 @@ namespace KinematicCharacterController.Examples
 
         private void UpdateAnimatorIsWallRunningBool()
         {
-            _animationParameterWrapperScript.SetIsWallRunningBool(_isWallRunning);
+            _playerAnimationParameterWrapperScript.SetIsWallRunningBool(_isWallRunning);
+            _playerAnimationParameterWrapperScript.SetIsWallRunningBool2(_isWallRunning);
         }
 
         private void AnimSetIsWallRunLeftBool(bool isWallRunLeft)
         {
-            _animationParameterWrapperScript.SetIsWallRunLeftBool(isWallRunLeft);
+            _playerAnimationParameterWrapperScript.SetIsWallRunLeftBool(isWallRunLeft);
         }
 
         private void UpdateAnimatorGroundedStateEnum()
         {
             //int index = (int)CurrentCharacterGroundedState;
-            _animationParameterWrapperScript.SetGroundedStateEnum((int)CurrentCharacterGroundedState);
+            _playerAnimationParameterWrapperScript.SetGroundedStateEnum((int)CurrentCharacterGroundedState);
         }
 
         private void UpdateAnimatorWallLookStateEnum()
         {            
-            _animationParameterWrapperScript.SetWallLookStateEnum(((int)CurrentCharacterWallLookState));
+            _playerAnimationParameterWrapperScript.SetWallLookStateEnum(((int)CurrentCharacterWallLookState));
+            _playerAnimationParameterWrapperScript.SetWallLookStateEnum2(((int)CurrentCharacterWallLookState));
         }
 
         private void SetAnimatorIsRunningBool(bool value)
         {
-            _animationParameterWrapperScript.SetIsRunningBool(value);
+            _playerAnimationParameterWrapperScript.SetIsRunningBool(value);
         }
 
         private void SetAnimatorEnumGroundedChangeTrigger()
         {
-            _animationParameterWrapperScript.SetGroundedStateTrigger();
+            _playerAnimationParameterWrapperScript.SetGroundedStateTrigger();
         }
 
         private void SetAnimatorEnumWallLookChangeTrigger()
         {
-            _animationParameterWrapperScript.SetWallLookStateTrigger();
+            _playerAnimationParameterWrapperScript.SetWallLookStateTrigger();
         }
 
         private void SetAnimatorJumpTrigger()
         {
-            _animationParameterWrapperScript.SetJumpTrigger();
+            _playerAnimationParameterWrapperScript.SetJumpTrigger();
         }
 
         private void SetAnimatorLandStableTrigger()
         {
-            _animationParameterWrapperScript.SetLandStableTrigger();
+            _playerAnimationParameterWrapperScript.SetLandStableTrigger();
         }
 
         public void SetAnimatorDashTriggerAndDirection(Vector3 dashDirection, ref Vector3 currentVelocity)
@@ -1512,110 +1499,37 @@ namespace KinematicCharacterController.Examples
             float dashX = Vector3.Dot(dashDirectionNormalized, Motor.CharacterRight);
             float dashY = Vector3.Dot(currentVelocity.normalized, Motor.CharacterUp); //Y is different because gravity!
             float dashZ = Vector3.Dot(dashDirectionNormalized, Motor.CharacterForward);
-            _animationParameterWrapperScript.SetDashX(dashX);
-            _animationParameterWrapperScript.SetDashY(dashY);
-            _animationParameterWrapperScript.SetDashZ(dashZ);
-            _animationParameterWrapperScript.SetDashTrigger();
+            _playerAnimationParameterWrapperScript.SetDashX(dashX);
+            _playerAnimationParameterWrapperScript.SetDashY(dashY);
+            _playerAnimationParameterWrapperScript.SetDashZ(dashZ);
+            _playerAnimationParameterWrapperScript.SetDashTrigger();
 
         }
 
         private void ResetAnimatorLandStableTrigger()
         {
-            _animationParameterWrapperScript.ResetLandStableTrigger();
+            _playerAnimationParameterWrapperScript.ResetLandStableTrigger();
         }
 
         private void ResetAnimatorEnumWallLookChangeTrigger()
         {
-            _animationParameterWrapperScript.ResetWallLookStateTrigger();
+            _playerAnimationParameterWrapperScript.ResetWallLookStateTrigger();
         }
 
         private void UpdateAnimatorSpeedFloat()
         {
-            _animationParameterWrapperScript.SetSpeedFloat(_movementSpeedFloat);
+            _playerAnimationParameterWrapperScript.SetSpeedFloat(_movementSpeedFloat);
         }
 
         private void SetAnimatorMagnitudeFloat(float magnitude)
         {
-            _animationParameterWrapperScript.SetVelocityMagnitude(magnitude);
+            _playerAnimationParameterWrapperScript.SetVelocityMagnitude(magnitude);
         }
 
         public float GetDashTimer()
         {
             return _dashCooldownTimer.GetTime();
-        }
-
-        private void UpdatePlayerWallTransform()
-        {
-            _wallPlayerProjectedTransform.CustomUp = Vector3.ProjectOnPlane(Motor.CharacterUp, _wallNormal);
-            _wallPlayerProjectedTransform.CustomRight = Vector3.ProjectOnPlane(Motor.CharacterRight, _wallNormal);
-            _wallPlayerProjectedTransform.CustomForward = Vector3.ProjectOnPlane(Motor.CharacterForward, _wallNormal);
-
-            if (_wallPlayerProjectedTransform.CustomUp.sqrMagnitude < 0.1f)
-            {
-                Debug.Log("Crossing for up");
-                _wallPlayerProjectedTransform.CustomUp = Vector3.Cross(_wallPlayerProjectedTransform.CustomForward, -_wallPlayerProjectedTransform.CustomRight);
-            }
-            else if (_wallPlayerProjectedTransform.CustomRight.sqrMagnitude < 0.1f)
-            {
-                Debug.Log("Crossing for right");
-                _wallPlayerProjectedTransform.CustomRight = Vector3.Cross(_wallPlayerProjectedTransform.CustomForward, _wallPlayerProjectedTransform.CustomUp);
-            }
-            else if (_wallPlayerProjectedTransform.CustomForward.sqrMagnitude < 0.1f)
-            {
-                Debug.Log("Crossing for forward");
-                _wallPlayerProjectedTransform.CustomForward = -Vector3.Cross(_wallPlayerProjectedTransform.CustomUp, _wallPlayerProjectedTransform.CustomRight);
-            }
-
-            _wallPlayerProjectedTransform.CustomUp = _wallPlayerProjectedTransform.CustomUp.normalized;
-            _wallPlayerProjectedTransform.CustomRight = _wallPlayerProjectedTransform.CustomRight.normalized;
-            _wallPlayerProjectedTransform.CustomForward = _wallPlayerProjectedTransform.CustomForward.normalized;
-
-            //Vector3.Cross(_wallPlayerTransform.CustomUp, _wallPlayerTransform.CustomRight);
-        }
-
-        public void UpdateCameraFollowPointTransform(float deltaTime)
-        {
-            //be state dependent and update when char rotate does
-            switch (CurrentCharacterGroundedState)
-            {
-                case CharacterGroundedState.Wall:
-                    {
-                        //CameraFollowPoint.position = _wallPlayerProjectedTransform.CustomUp;
-                        Vector3 PlanarDirection = _wallPlayerProjectedTransform.CustomForward;
-                        Quaternion planarRot = Quaternion.LookRotation(PlanarDirection, _wallPlayerProjectedTransform.CustomUp);
-
-                        Quaternion targetRotation = Quaternion.Slerp(CameraFollowPoint.rotation, planarRot, 1f - Mathf.Exp(-10000f * deltaTime));
-
-                        // Apply rotation
-                        CameraFollowPoint.rotation = targetRotation;
-
-                        break;
-                    }
-                default:
-                    {
-                        //Vector3 PlanarDirection = Motor.CharacterForward;
-                        //Quaternion planarRot = Quaternion.LookRotation(PlanarDirection, Motor.CharacterUp);
-
-                        //Quaternion targetRotation = Quaternion.Slerp(CameraFollowPoint.rotation, planarRot, 1f - Mathf.Exp(-10000f * deltaTime));
-
-                        //// Apply rotation
-                        //CameraFollowPoint.rotation = targetRotation;
-
-                        break;
-                    }
-
-            }
-
-            
-
-            
-
-            
-
-
-
-
-        }
+        }    
 
         private void SetAnimatorVelocityVector(ref Vector3 currentVelocity)
         {
@@ -1672,9 +1586,9 @@ namespace KinematicCharacterController.Examples
             }
 
             //Set speed multiplier in animator
-            _animationParameterWrapperScript.SetVelocityX(velocityX);
-            _animationParameterWrapperScript.SetVelocityY(velocityY);
-            _animationParameterWrapperScript.SetVelocityZ(velocityZ);
+            _playerAnimationParameterWrapperScript.SetVelocityX(velocityX);
+            _playerAnimationParameterWrapperScript.SetVelocityY(velocityY);
+            _playerAnimationParameterWrapperScript.SetVelocityZ(velocityZ);
         }
     }
 }
