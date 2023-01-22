@@ -195,7 +195,7 @@ namespace KinematicCharacterController.Examples
         private bool _isWallRunning;
         private Vector3 _wallHitPoint;
         private bool _wantsToTest;
-        private bool _isWallForcedJump;
+        private bool _isWallJump;
 
 
 
@@ -695,7 +695,7 @@ namespace KinematicCharacterController.Examples
                                         Debug.Log("KICKING OFF");
                                         //Debug.Break();
                                         //AddVelocity(_wallNormal.normalized * WallRepulseForce * Time.deltaTime);
-                                        _isWallForcedJump = true;
+                                        _isWallJump = true;
                                         gravityVelocity = deltaTime * Gravity;
                                         targetMovementVelocity = currentVelocity + GetAddedAirVelocity(ref currentVelocity, deltaTime);
                                         _isWallRunning = false;
@@ -754,13 +754,17 @@ namespace KinematicCharacterController.Examples
                                         gravityVelocity = deltaTime * Gravity;
                                         targetMovementVelocity = currentVelocity + GetAddedAirVelocity(ref currentVelocity, deltaTime);
                                         _isWallRunning = false;
-                                        _isWallForcedJump = true;
+                                        _isWallJump = true;
                                     }
                                     currentVelocity = Vector3.Lerp(currentVelocity, targetMovementVelocity, 1f - Mathf.Exp(-StableMovementSharpness * deltaTime));
                                     currentVelocity += gravityVelocity;
 
                                     break;
                                 }
+                        }
+                        if (_jumpRequested)
+                        {
+                            _isWallJump = true;
                         }
                         break;
                     }
@@ -840,20 +844,47 @@ namespace KinematicCharacterController.Examples
             // Handle jumping
             _jumpedThisFrame = false;
             _timeSinceJumpRequested += deltaTime;
-            if (_jumpRequested && (_jumpCountCurrent > 0) || _isWallForcedJump)
+            if (_jumpRequested && (_jumpCountCurrent > 0) || _isWallJump)
             {
 
-                if (!_isWallForcedJump)
+                if (!_isWallJump)
                 {
                     _jumpCountCurrent--;
                 }
-                // See if we actually are allowed to jump _timeSinceLastAbleToJump <= JumpPostGroundingGraceTime))
+                _isWallJump = false;
+                //See if we actually are allowed to jump _timeSinceLastAbleToJump <= JumpPostGroundingGraceTime))
 
-                Vector3 jumpDirection = GetJumpDirectionNormalized();
+                Vector3 jumpDirection;
 
-                // Makes the character skip ground probing/snapping on its next update. 
-                // If this line weren't here, the character would remain snapped to the ground when trying to jump. Try commenting this line out and see.
-                Motor.ForceUnground();
+                switch (CurrentCharacterGroundedState)
+                {
+                    case CharacterGroundedState.GroundedStable:
+                        {
+                            jumpDirection = Motor.GroundingStatus.GroundNormal;
+                            break;
+                        }
+                    case CharacterGroundedState.GroundedUnstable:
+                        {
+                            jumpDirection = Motor.GroundingStatus.GroundNormal;
+                            break;
+                        }
+                    case CharacterGroundedState.Wall:
+                        {
+
+                            jumpDirection = _wallNormal + Motor.CharacterUp;
+                            break;
+                        }
+                    case CharacterGroundedState.Airborne:
+                    default:
+                        {
+                            jumpDirection = Motor.CharacterUp;
+                            break;
+                        }
+                }
+
+                        // Makes the character skip ground probing/snapping on its next update. 
+                        // If this line weren't here, the character would remain snapped to the ground when trying to jump. Try commenting this line out and see.
+                        Motor.ForceUnground();
                 CharacterGroundedStateTransitionTo(CharacterGroundedState.Airborne);
                 SetAnimatorJumpTrigger();
                 ResetAnimatorLandStableTrigger();
@@ -869,7 +900,7 @@ namespace KinematicCharacterController.Examples
                 {
                     _isDashing = false;
                 }
-                _isWallForcedJump = false;
+                
             }
 
             if (_wantsToTest)
@@ -1185,7 +1216,7 @@ namespace KinematicCharacterController.Examples
                         }
                     case CharacterGroundedState.Wall:
                         {
-                            _isWallForcedJump = false;
+                            _isWallJump = false;
                             _currentWallCollider = null;
                             ResetWallLookState();
                             _isWallRunning = false;                            
@@ -1215,7 +1246,6 @@ namespace KinematicCharacterController.Examples
                         }
                     case CharacterGroundedState.Wall:
                         {
-                            Debug.Log("Transition to wall");
                             _isDashing = false;
                             Motor.ForceUnground();
                             break;
@@ -1264,11 +1294,8 @@ namespace KinematicCharacterController.Examples
             }
             else
             {
-                Debug.Log("No state reached. Returning no wall.");
                 CurrentCharacterWallLookState = CharacterWallLookState.NoWall;
             }
-
-            Debug.Log("WALL LOOK STATE" + CurrentCharacterWallLookState);
             
             if (_previousCharacterWallLookState != CurrentCharacterWallLookState)
             {
@@ -1529,7 +1556,35 @@ namespace KinematicCharacterController.Examples
         public float GetDashTimer()
         {
             return _dashCooldownTimer.GetTime();
-        }    
+        }
+        
+        public void ResetJumpCount()
+        {
+            _jumpCountCurrent = JumpCountMax;
+        }
+
+        public void AddJump(int jumps)
+        {
+            _jumpCountCurrent += jumps;
+            if (_jumpCountCurrent > JumpCountMax)
+            {
+                _jumpCountCurrent = JumpCountMax;
+            }
+        }
+
+        public void ResetDashCount()
+        {
+            _dashCountCurrent = AirDashCountMax;
+        }
+
+        public void AddDash(int dashes)
+        {
+            _dashCountCurrent += dashes;
+            if (_dashCountCurrent > AirDashCountMax)
+            {
+                _dashCountCurrent = AirDashCountMax;
+            }
+        }
 
         private void SetAnimatorVelocityVector(ref Vector3 currentVelocity)
         {
