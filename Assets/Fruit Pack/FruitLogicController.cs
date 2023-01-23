@@ -13,7 +13,7 @@ public class FruitLogicController : MonoBehaviour
     }
 
     [SerializeField] FruitType _fruitType;
-    [SerializeField] Transform _meshTransform;
+    [SerializeField] Transform _rootTransform;
     [SerializeField] float _rotationSpeed = 1f;
 
     // Start is called before the first frame update
@@ -25,7 +25,7 @@ public class FruitLogicController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        _meshTransform.Rotate(0, Time.deltaTime * _rotationSpeed, 0);
+        _rootTransform.Rotate(0, Time.deltaTime * _rotationSpeed, 0);
     }
 
     private void OnTriggerEnter(Collider other)

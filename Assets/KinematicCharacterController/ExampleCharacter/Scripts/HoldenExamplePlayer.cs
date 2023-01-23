@@ -112,6 +112,7 @@ namespace KinematicCharacterController.Examples
 
             //Character.UpdateCameraFollowPointTransform(Time.deltaTime);
             HandleCameraInput();
+
         }
 
         private void HandleCameraInput()
@@ -155,6 +156,7 @@ namespace KinematicCharacterController.Examples
             characterInputs.MoveAxisRight = MoveRawInput.x;
             characterInputs.CameraRotation = CharacterCamera.Transform.rotation;
             characterInputs.JumpDown = _playerJumpIA.WasPressedThisFrame();
+            characterInputs.JumpUp = _playerJumpIA.WasReleasedThisFrame();
             characterInputs.CrouchPressed = _playerCrouchIA.WasPerformedThisFrame();
             //characterInputs.CrouchUp = _playerCrouchIA.WasReleasedThisFrame();
             characterInputs.Attack1Down = _playerAttack1IA.WasPressedThisFrame();
@@ -173,7 +175,7 @@ namespace KinematicCharacterController.Examples
             Character.SetInputs(ref characterInputs);
         }
 
-        
+
 
         private Vector2 GetMouseScreenPosition() => _playerLookIA.ReadValue<Vector2>();
 

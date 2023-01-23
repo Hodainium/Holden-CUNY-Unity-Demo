@@ -57,6 +57,11 @@ public struct Timer
         return _isTicking;
     }
 
+    public void Disable()
+    {
+        _isTicking = false;
+    }
+
     private float GetTimerPercentToCompletion()
     {
         CheckTimer();

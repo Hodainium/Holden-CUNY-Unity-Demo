@@ -52,6 +52,7 @@ namespace KinematicCharacterController.Examples
         private RaycastHit[] _obstructions = new RaycastHit[MaxObstructions];
         private float _obstructionTime;
         private Vector3 _currentFollowPosition;
+        private Vector3 _targetFollowPosition;
 
         private const int MaxObstructions = 32;
 
@@ -80,6 +81,8 @@ namespace KinematicCharacterController.Examples
             PlanarDirection = FollowTransform.forward;
             _currentFollowPosition = FollowTransform.position;
         }
+
+        
 
         public void UpdateWithInput(float deltaTime, float zoomInput, Vector3 rotationInput)
         {
