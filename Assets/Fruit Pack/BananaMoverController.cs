@@ -4,7 +4,7 @@ using UnityEngine;
 using KinematicCharacterController;
 using UnityEngine.Playables;
 
-public class PlatformMoverController : MonoBehaviour, IMoverController
+public class BananaMoverController : MonoBehaviour, IMoverController
 {
     [SerializeField] PhysicsMover Mover;
 

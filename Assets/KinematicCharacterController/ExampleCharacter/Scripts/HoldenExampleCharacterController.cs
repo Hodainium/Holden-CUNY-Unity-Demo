@@ -862,7 +862,7 @@ namespace KinematicCharacterController.Examples
                 else
                 {
                     _isExitingDash = false;
-                    _isRunning = true;
+                    //_isRunning = true;
                 }
                 
             }
@@ -926,6 +926,10 @@ namespace KinematicCharacterController.Examples
                 if(_isDashing)
                 {
                     _isDashing = false;
+                    if (currentVelocity.magnitude > MaxMoveBoostSpeed)
+                    {
+                        currentVelocity = currentVelocity.normalized * MaxMoveBoostSpeed;
+                    }
                 }
                 
             }            
