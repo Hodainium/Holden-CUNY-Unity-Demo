@@ -1419,12 +1419,14 @@ namespace KinematicCharacterController.Examples
             {
                 case CharacterGroundedState.GroundedStable:
                     {
-                        jumpDirection = Motor.GroundingStatus.GroundNormal;
+                        jumpDirection = Motor.GroundingStatus.GroundNormal + Gravity.normalized;
+                        //jumpDirection = Motor.CharacterUp;
                         break;
                     }
                 case CharacterGroundedState.GroundedUnstable:
                     {
-                        jumpDirection = Motor.GroundingStatus.GroundNormal;
+                        jumpDirection = Motor.GroundingStatus.GroundNormal + Gravity.normalized;
+                        //jumpDirection = Motor.CharacterUp;
                         break;
                     }
                 case CharacterGroundedState.Wall:
