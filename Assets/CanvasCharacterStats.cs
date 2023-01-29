@@ -30,7 +30,6 @@ public class CanvasCharacterStats : MonoBehaviour
             "Velocity vector= " + _playerController.Motor.BaseVelocity.ToString() + "\n" +
             "Movement value= " + _playerController.PeekMovementValue().ToString() + "\n" +
             "Player ground state= " + _playerController.CurrentCharacterGroundedState.ToString() + "\n" +
-            "Player stance state= " + _playerController.CurrentCharacterState.ToString() + "\n" +
             "Player wall look state= " + _playerController.CurrentCharacterWallLookState.ToString() + "\n" +
             "Is wall running= " + _playerController.DebugGetIsClimbing().ToString() + "\n" +
             "Dash count= " + _playerController.DashCountDebug.ToString() + "\n" +
@@ -38,12 +37,12 @@ public class CanvasCharacterStats : MonoBehaviour
 
         _textUIObject.text = tmpString;
 
-        _climbTimer = _playerController.GetClimbTimer();
-        _runTimer = _playerController.GetRunTimer();
-        _dashTimer = _playerController.GetDashTimer();
+        //_climbTimer = _playerController.GetClimbTimer();
+        //_runTimer = _playerController.GetRunTimer();
+        //_dashTimer = _playerController.GetDashTimer();
 
-        _climbMeterChargeBarImage.fillAmount = _climbTimer/_playerController.MaxClimbCharge;
-        _runMeterChargeBarImage.fillAmount = _runTimer/ _playerController.MaxClimbCharge;
-        _dashTimerChargeBarImage.fillAmount = _dashTimer / _playerController.DashCoolDownTimeInFrames;
+        //_climbMeterChargeBarImage.fillAmount = _climbTimer/_playerController.MaxClimbCharge;
+        //_runMeterChargeBarImage.fillAmount = _runTimer/ _playerController.MaxClimbCharge;
+        //_dashTimerChargeBarImage.fillAmount = _dashTimer / _playerController.DashCoolDownTimeInFrames;
     }
 }

@@ -694,7 +694,7 @@ namespace KinematicCharacterController.Examples
                             case CharacterWallLookState.Forward: //Start climbing wall
                                 {
                                     float inputAgainstWall = Vector3.Dot(_moveInputVector, -_wallNormal);
-                                    Debug.Log("Wall input: " + inputAgainstWall);
+                                    //Debug.Log("Wall input: " + inputAgainstWall);
                                     if (CanClimb()) //If we are above a certain velocity slide on the wall instead of climb. Uncontrollable velocity  // && inputAgainstWall > -0.2f
                                     {
                                         wallClimbInputDirectionNormalized = Vector3.ProjectOnPlane(_moveInputRawXZX, _wallNormal).normalized; //= _moveInputRawXZY.normalized; //
@@ -1172,7 +1172,7 @@ namespace KinematicCharacterController.Examples
             {
                 if (MathF.Abs(Vector3.Dot(hitNormal.normalized, Motor.CharacterUp)) < 0.2f) //
                 {
-                    Debug.Log("Resseting timer");
+                    //Debug.Log("Resseting timer");
                     _wallHitCheckTimer.ResetTimer();
 
                     if (_currentWallCollider != hitCollider)
