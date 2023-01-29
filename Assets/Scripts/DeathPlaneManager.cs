@@ -1,14 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using KinematicCharacterController.Examples;
+using KinematicCharacterController;
 using System;
 
 public class DeathPlaneManager : MonoBehaviour
 {
     public static RespawnPoint CurrentRespawnPoint;
     private int currentSpawnPointNumber = 0;
-    public HoldenExamplePlayer PlayerHandlerObject;
+    public HoldenPlayerManager PlayerHandlerObject;
     [SerializeField] private RespawnPoint _defaultRespawnPoint;
 
     // Start is called before the first frame update

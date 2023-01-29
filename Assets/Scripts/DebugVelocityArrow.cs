@@ -1,13 +1,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using KinematicCharacterController.Examples;
+using KinematicCharacterController;
 
 public class DebugVelocityArrow : MonoBehaviour
 {
     // Start is called before the first frame update
     [SerializeField] float XOffset = 0f;
-    [SerializeField] HoldenExampleCharacterController _playerController;
+    [SerializeField] HoldenCharacterController _playerController;
     [SerializeField] Camera PlayerCamera;
     Transform Transform; 
 

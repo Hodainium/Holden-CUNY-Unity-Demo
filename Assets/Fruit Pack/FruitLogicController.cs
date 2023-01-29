@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using KinematicCharacterController.Examples;
+using KinematicCharacterController;
 
 public class FruitLogicController : MonoBehaviour
 {
@@ -44,7 +44,7 @@ public class FruitLogicController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        HoldenExampleCharacterController charController = other.GetComponent<HoldenExampleCharacterController>();
+        HoldenCharacterController charController = other.GetComponent<HoldenCharacterController>();
 
         if (charController)
         {

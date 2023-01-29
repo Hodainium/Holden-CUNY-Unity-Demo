@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using KinematicCharacterController.Examples;
+using KinematicCharacterController;
 using System;
 
 public class DeathPlane : MonoBehaviour
@@ -15,7 +15,6 @@ public class DeathPlane : MonoBehaviour
     void Start()
     {
         //deathPlaneCollider = this.gameObject.GetComponent<Collider>();
-        Debug.Log("Found coll? " + (deathPlaneCollider != null));
         if (_subscribedRespawnPoints <= 0)
         {
             DisableDeathPlane();
