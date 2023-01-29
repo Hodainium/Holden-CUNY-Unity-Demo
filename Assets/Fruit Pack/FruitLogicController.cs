@@ -28,7 +28,7 @@ public class FruitLogicController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        this.transform.Rotate(0, Time.deltaTime * _rotationSpeed, 0);        
+        this.transform.Rotate(0f, Time.deltaTime * _rotationSpeed, 0f);        
     }
 
     private void FixedUpdate()

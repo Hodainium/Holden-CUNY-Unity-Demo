@@ -909,7 +909,7 @@ namespace KinematicCharacterController.Examples
                     case CharacterGroundedState.Airborne:
                     default:
                         {
-                            _storedJumpDirection = (Motor.CharacterUp + _moveInputVector);
+                            _storedJumpDirection = (Motor.CharacterUp); // + _moveInputVector
                             break;
                         }
                 }
@@ -1000,8 +1000,6 @@ namespace KinematicCharacterController.Examples
             {
                 if (!_wallHitCheckTimer.IsActive()) //Turns out rotation comes before velocity. Need to figure out how to do update this before.
                 {
-                    
-                    Debug.Log("STOPPED TOUCHING WALL");
                     StoppedTouchingWall();
                 }
             }
@@ -1643,52 +1641,6 @@ namespace KinematicCharacterController.Examples
             float velocityY = Vector3.Dot(currentVelocity.normalized, Motor.CharacterUp); //Y is different because gravity!
             float velocityZ = Vector3.Dot(moveInputNormalized, Motor.CharacterForward);
             //Compare max speed values for ground and air
-
-            switch(CurrentCharacterGroundedState)
-            {
-                case CharacterGroundedState.Airborne:
-                    {
-                        //velocityX = 0f;
-                        //velocityZ = 0f;
-                        break;
-                    }
-                case CharacterGroundedState.GroundedStable:
-                    {
-                        #region old code
-                        //Vector3 currentVelocityOnGround = Vector3.ProjectOnPlane(currentVelocity, Motor.GroundingStatus.GroundNormal);
-                        //Vector3 xVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterRight);
-                        //Vector3 yVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterUp);
-                        //Vector3 zVelocityVect = Vector3.Project(currentVelocityOnGround, Motor.CharacterForward);
-
-                        //float currentSpeedOnGround = currentVelocityOnGround.magnitude;
-                        //if (currentSpeedOnGround > MaxMoveStableSpeed)
-                        //{
-                        //    overDrive = true;
-                        //}
-                        //if (currentSpeedOnGround >= MaxMoveStableSpeed * 0.5f)
-                        //{
-                        //    isRunning = true;
-                        //}
-                        //if (currentSpeedOnGround > 0.1f)
-                        //{
-                        //    velocityX = xVelocityVect.magnitude / MaxMoveWalkSpeed;
-                        //    velocityY = yVelocityVect.magnitude / MaxStableFallSpeed;
-                        //    velocityZ = zVelocityVect.magnitude / MaxMoveWalkSpeed;
-
-                        //}
-                        //else
-                        //{
-                        //    //Velo is 0
-                        //    velocityX = 0f;
-                        //    velocityZ = 0f;
-                        //}
-
-                        //SetAnimatorIsRunningBool(isRunning);
-                        #endregion
-
-                        break;
-                    }
-            }
 
             //Set speed multiplier in animator
             _playerAnimationParameterWrapperScript.SetVelocityX(velocityX);

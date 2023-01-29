@@ -27,7 +27,8 @@ public class BananaMoverController : MonoBehaviour, IMoverController
 
     [SerializeField] PlayableDirector ShakingDirector;
     [SerializeField] PlayableDirector FallingDirector;
-    private GameObject _parentObject;
+    [SerializeField] float _respawnTime = 5f;
+    //private GameObject _parentObject;
     private BananaState _currentBananaState;
     private Transform _transform;
     private Timer _shakingTimer;
@@ -35,6 +36,12 @@ public class BananaMoverController : MonoBehaviour, IMoverController
     private double _fallingDurationTime;
     private float _lastTimeCheck;
     private float _shakingStartingTime;
+    private Quaternion _defaultRotation;
+    private Vector3 _defaultPosition;
+    private MeshRenderer _bananaMesh;
+    private Timer _respawnTimer;
+    
+    private bool _isBananaDisabled;
 
     private void Start()
     {
@@ -45,7 +52,11 @@ public class BananaMoverController : MonoBehaviour, IMoverController
         Mover.MoverController = this;
         _shakingTimer = new Timer(_shakingTime);
         _fallingDurationTime = FallingDirector.duration;
-        _parentObject = this.transform.parent.gameObject;
+        _bananaMesh = this.gameObject.GetComponent<MeshRenderer>();
+        _respawnTimer = new Timer(_respawnTime);
+
+        _defaultRotation = this.transform.rotation;
+        _defaultPosition = this.transform.position;
     }
 
     private void OnTriggerEnter(Collider collider)
@@ -64,54 +75,63 @@ public class BananaMoverController : MonoBehaviour, IMoverController
         Vector3 positionBeforeAnim = _transform.position;
         Quaternion rotationBeforeAnim = _transform.rotation;
 
-        if (ForceShake)
+        if (_isBananaDisabled)
         {
-            StartShaking();
-            ForceShake = false;
+            Debug.Log("Banana is disabled!");
+            Debug.Log(_respawnTimer.GetTime());
+            if (!_respawnTimer.IsActive())
+            {
+                Debug.Log("Banana reset!");
+                ResetBanana();
+            }
         }
-
-        switch (_currentBananaState)
+        else
         {
-            case BananaState.Shaking:
-                {
-                    if (_shakingTimer.IsActive())
+            switch (_currentBananaState)
+            {
+                case BananaState.Shaking:
                     {
-                        EvaluateAtTimeShaking((Time.time-_shakingStartingTime * _shakingSpeed) + _shakingTimeOffset);
+                        if (_shakingTimer.IsActive())
+                        {
+                            EvaluateAtTimeShaking((Time.time - _shakingStartingTime * _shakingSpeed) + _shakingTimeOffset);
+                        }
+                        else
+                        {
+                            _currentBananaState = BananaState.Falling;
+
+
+                            _fallingTime = 0f;
+                            _lastTimeCheck = Time.time;
+                            DisableBananaBox();
+                            EvaluateAtTimeFalling((_fallingTime * _fallingSpeed));
+                        }
+
+
+                        break;
                     }
-                    else
+                case BananaState.Falling:
                     {
-                        _currentBananaState = BananaState.Falling;
-
-
-                        _fallingTime = 0f;
+                        _fallingTime += Time.time - _lastTimeCheck;
                         _lastTimeCheck = Time.time;
-                        DisableBananaBox();
-                        EvaluateAtTimeFalling((_fallingTime * _fallingSpeed));
+
+
+                        if (_fallingTime >= _fallingDurationTime)
+                        {
+                            DisableBananaMesh();
+                            _respawnTimer.ResetTimer();
+                            _isBananaDisabled = true;
+                            //EvaluateAtTimeFalling((_fallingDurationTime * _fallingSpeed));
+
+                        }
+                        else
+                        {
+                            EvaluateAtTimeFalling((_fallingTime * _fallingSpeed));
+                        }
+                        break;
                     }
 
 
-                    break;
-                }
-            case BananaState.Falling:
-                {
-                    _fallingTime += Time.time - _lastTimeCheck;                    
-                    _lastTimeCheck = Time.time;
-                    
-
-                    if (_fallingTime >= _fallingDurationTime)
-                    {
-                        DisableBanana();
-                        //EvaluateAtTimeFalling((_fallingDurationTime * _fallingSpeed));
-                        
-                    }
-                    else
-                    {
-                        EvaluateAtTimeFalling((_fallingTime * _fallingSpeed));
-                    }
-                    break;
-                }
-
-                
+            }
         }
 
         goalPosition = _transform.position;
@@ -136,11 +156,21 @@ public class BananaMoverController : MonoBehaviour, IMoverController
         FallingDirector.Evaluate();
     }
 
-    public void DisableBanana()
+    public void EnableBananaMesh()
     {
-        Mover.enabled = false;
-        _parentObject.SetActive(false);
+        _bananaMesh.enabled = true;
 
+    }
+
+    public void DisableBananaMesh()
+    {
+        _bananaMesh.enabled = false;
+
+    }
+
+    public void EnableBananaBox()
+    {
+        _bananaBoxObject.SetActive(true);
     }
 
     public void DisableBananaBox()
@@ -153,5 +183,15 @@ public class BananaMoverController : MonoBehaviour, IMoverController
         _currentBananaState = BananaState.Shaking;
         _shakingTimer.ResetTimer();
         _shakingStartingTime = Time.time;
+    }
+
+    private void ResetBanana()
+    {
+        _currentBananaState = BananaState.Stable;
+        EnableBananaMesh();
+        EnableBananaBox();
+        this.transform.position = _defaultPosition;
+        this.transform.rotation = _defaultRotation;
+        _isBananaDisabled = false;
     }
 }
