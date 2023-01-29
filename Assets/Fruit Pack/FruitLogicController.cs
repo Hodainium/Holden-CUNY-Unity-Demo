@@ -13,19 +13,33 @@ public class FruitLogicController : MonoBehaviour
     }
 
     [SerializeField] FruitType _fruitType;
-    [SerializeField] Transform _rootTransform;
+    //[SerializeField] Transform _rootTransform;
     [SerializeField] float _rotationSpeed = 1f;
+    [SerializeField] float _respawnTime = 1f;
+    private Timer _respawnTimer;
+    private bool _isOnCooldown = false;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+        _respawnTimer = new Timer(_respawnTime);
     }
 
     // Update is called once per frame
     void Update()
     {
-        _rootTransform.Rotate(0, Time.deltaTime * _rotationSpeed, 0);
+        this.transform.Rotate(0, Time.deltaTime * _rotationSpeed, 0);        
+    }
+
+    private void FixedUpdate()
+    {
+        if (_isOnCooldown)
+        {
+            if(!_respawnTimer.IsActive())
+            {
+                EndFruitCooldown();
+            }
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -38,18 +52,41 @@ public class FruitLogicController : MonoBehaviour
             {
                 case FruitType.Apple:
                     {
-                        charController.ResetJumpCount();
+                        charController.AddExtraJump();
                         break;
                     }
                 case FruitType.Strawberry:
                     {
-                        Debug.Log("Reset dashes");
-                        charController.ResetDashCount();
+                        //Debug.Log("Added dash");
+                        charController.AddExtraDash();
                         break;
                     }
             }
-            this.gameObject.SetActive(false);
+            StartFruitCooldown();
         }
 
+    }
+
+    private void StartFruitCooldown()
+    {
+        DisableFruit();
+        _respawnTimer.ResetTimer();
+        _isOnCooldown = true;
+    }
+
+    private void EndFruitCooldown()
+    {
+        _isOnCooldown = false;
+        EnableFruit();
+    }
+
+    private void EnableFruit()
+    {
+        this.transform.GetChild(0).gameObject.SetActive(true);
+    }
+
+    private void DisableFruit()
+    {
+        this.transform.GetChild(0).gameObject.SetActive(false);
     }
 }

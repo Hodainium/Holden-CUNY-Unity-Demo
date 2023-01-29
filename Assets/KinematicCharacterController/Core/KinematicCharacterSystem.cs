@@ -19,6 +19,9 @@ namespace KinematicCharacterController
         private static float _lastCustomInterpolationStartTime = -1f;
         private static float _lastCustomInterpolationDeltaTime = -1f;
 
+        static int _characterMotorsCount;
+        static int _physicsMoversCount;
+
         public static KCCSettings Settings;
 
         /// <summary>
@@ -68,6 +71,7 @@ namespace KinematicCharacterController
         public static void RegisterCharacterMotor(KinematicCharacterMotor motor)
         {
             CharacterMotors.Add(motor);
+            _characterMotorsCount = CharacterMotors.Count; //This is because a static method
         }
 
         /// <summary>
@@ -76,6 +80,7 @@ namespace KinematicCharacterController
         public static void UnregisterCharacterMotor(KinematicCharacterMotor motor)
         {
             CharacterMotors.Remove(motor);
+            _characterMotorsCount = CharacterMotors.Count;
         }
 
         /// <summary>
@@ -97,7 +102,7 @@ namespace KinematicCharacterController
         public static void RegisterPhysicsMover(PhysicsMover mover)
         {
             PhysicsMovers.Add(mover);
-
+            _physicsMoversCount = PhysicsMovers.Count;
             mover.Rigidbody.interpolation = RigidbodyInterpolation.None;
         }
 
@@ -107,6 +112,7 @@ namespace KinematicCharacterController
         public static void UnregisterPhysicsMover(PhysicsMover mover)
         {
             PhysicsMovers.Remove(mover);
+            _physicsMoversCount = PhysicsMovers.Count;
         }
 
         // This is to prevent duplicating the singleton gameobject on script recompiles
@@ -130,7 +136,6 @@ namespace KinematicCharacterController
                 {
                     PreSimulationInterpolationUpdate(deltaTime);
                 }
-
                 Simulate(deltaTime, CharacterMotors, PhysicsMovers);
 
                 if (Settings.Interpolate)
@@ -182,24 +187,24 @@ namespace KinematicCharacterController
         /// </summary>
         public static void Simulate(float deltaTime, List<KinematicCharacterMotor> motors, List<PhysicsMover> movers)
         {
-            int characterMotorsCount = motors.Count;
-            int physicsMoversCount = movers.Count;
+            _characterMotorsCount = motors.Count;
+            _physicsMoversCount = movers.Count;
 
 #pragma warning disable 0162
             // Update PhysicsMover velocities
-            for (int i = 0; i < physicsMoversCount; i++)
+            for (int i = 0; i < _physicsMoversCount; i++)
             {
                 movers[i].VelocityUpdate(deltaTime);
             }
 
             // Character controller update phase 1
-            for (int i = 0; i < characterMotorsCount; i++)
+            for (int i = 0; i < _characterMotorsCount; i++)
             {
                 motors[i].UpdatePhase1(deltaTime);
             }
 
             // Simulate PhysicsMover displacement
-            for (int i = 0; i < physicsMoversCount; i++)
+            for (int i = 0; i < _physicsMoversCount; i++)
             {
                 PhysicsMover mover = movers[i];
 
@@ -209,7 +214,7 @@ namespace KinematicCharacterController
             }
 
             // Character controller update phase 2 and move
-            for (int i = 0; i < characterMotorsCount; i++)
+            for (int i = 0; i < _characterMotorsCount; i++)
             {
                 KinematicCharacterMotor motor = motors[i];
 

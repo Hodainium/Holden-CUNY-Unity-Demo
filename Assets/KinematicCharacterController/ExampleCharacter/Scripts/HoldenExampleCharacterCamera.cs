@@ -31,6 +31,7 @@ namespace KinematicCharacterController.Examples
         public float RotationSpeed = 1f;
         public float RotationSharpness = 10000f;
         public bool RotateWithPhysicsMover = false;
+        public bool UseGravityAngle = true;
 
         [Header("Obstruction")]
         public float ObstructionCheckRadius = 0.2f;
@@ -53,6 +54,7 @@ namespace KinematicCharacterController.Examples
         private float _obstructionTime;
         private Vector3 _currentFollowPosition;
         private Vector3 _targetFollowPosition;
+        private Vector3 _gravityUpDirection;
 
         private const int MaxObstructions = 32;
 
@@ -82,6 +84,11 @@ namespace KinematicCharacterController.Examples
             _currentFollowPosition = FollowTransform.position;
         }
 
+        public void SetCameraPlanarUp(Vector3 planarUp)
+        {
+            _gravityUpDirection = planarUp;
+        }
+
         
 
         public void UpdateWithInput(float deltaTime, float zoomInput, Vector3 rotationInput)
@@ -99,13 +106,35 @@ namespace KinematicCharacterController.Examples
                     rotationInput.y *= -1f;
                 }
 
-                // Process rotation input
-                Quaternion rotationFromInput = Quaternion.Euler(FollowTransform.up * (rotationInput.x * RotationSpeed));
-                PlanarDirection = rotationFromInput * PlanarDirection;
-                //Do cross product twice to make forward vector perpendicular to the up transform. Use up and forward to find right. Then use up and right to find new forward. 
-                PlanarDirection = Vector3.Cross(FollowTransform.up, Vector3.Cross(PlanarDirection, FollowTransform.up));
-                Quaternion planarRot = Quaternion.LookRotation(PlanarDirection, FollowTransform.up);
-                
+                //// Process rotation input
+                //Quaternion rotationFromInput = Quaternion.Euler(FollowTransform.up * (rotationInput.x * RotationSpeed));
+                //PlanarDirection = rotationFromInput * PlanarDirection;
+                ////Do cross product twice to make forward vector perpendicular to the up transform. Use up and forward to find right. Then use up and right to find new forward. 
+                //PlanarDirection = Vector3.Cross(FollowTransform.up, Vector3.Cross(PlanarDirection, FollowTransform.up));
+                //Quaternion planarRot = Quaternion.LookRotation(PlanarDirection, FollowTransform.up);
+
+                Quaternion planarRot;
+
+                if (_gravityUpDirection != null && UseGravityAngle)
+                {
+                    // Process rotation input
+                    Quaternion rotationFromInput = Quaternion.Euler(_gravityUpDirection * (rotationInput.x * RotationSpeed));
+                    PlanarDirection = rotationFromInput * PlanarDirection;
+                    //Do cross product twice to make forward vector perpendicular to the up transform. Use up and forward to find right. Then use up and right to find new forward. 
+                    PlanarDirection = Vector3.Cross(_gravityUpDirection, Vector3.Cross(PlanarDirection, _gravityUpDirection));
+                    planarRot = Quaternion.LookRotation(PlanarDirection, _gravityUpDirection);
+                }
+                else
+                {
+                    // Process rotation input
+                    Quaternion rotationFromInput = Quaternion.Euler(FollowTransform.up * (rotationInput.x * RotationSpeed));
+                    PlanarDirection = rotationFromInput * PlanarDirection;
+                    //Do cross product twice to make forward vector perpendicular to the up transform. Use up and forward to find right. Then use up and right to find new forward. 
+                    PlanarDirection = Vector3.Cross(FollowTransform.up, Vector3.Cross(PlanarDirection, FollowTransform.up));
+                    planarRot = Quaternion.LookRotation(PlanarDirection, FollowTransform.up);
+                }
+
+
                 _targetVerticalAngle -= (rotationInput.y * RotationSpeed);
                 _targetVerticalAngle = Mathf.Clamp(_targetVerticalAngle, MinVerticalAngle, MaxVerticalAngle);
                 Quaternion verticalRot = Quaternion.Euler(_targetVerticalAngle, 0, 0);

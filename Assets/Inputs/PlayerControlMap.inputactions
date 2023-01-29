@@ -387,6 +387,17 @@
                 },
                 {
                     "name": "",
+                    "id": "f5b8c8b1-3dc8-4e1e-99ab-99148d913421",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "Hold",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Run",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "7317b621-1db3-4873-98bc-df170192a9bb",
                     "path": "<Gamepad>/buttonEast",
                     "interactions": "Press",
@@ -398,11 +409,33 @@
                 },
                 {
                     "name": "",
+                    "id": "500bf6ff-2528-4c39-adda-759827eab80a",
+                    "path": "<Keyboard>/f",
+                    "interactions": "Press",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "b65146d0-8ffe-4709-9333-4dc19fc9baee",
                     "path": "<Gamepad>/leftShoulder",
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
+                    "action": "AimDash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d7e17cc0-03ef-4f25-988c-5121e14163a6",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
                     "action": "AimDash",
                     "isComposite": false,
                     "isPartOfComposite": false

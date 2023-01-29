@@ -20,7 +20,7 @@ public class CanvasCharacterStats : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        _playerController = holdenExamplePlayer.Character;
+        _playerController = holdenExamplePlayer.CharacterController;
     }
 
     // Update is called once per frame

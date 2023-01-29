@@ -13,7 +13,7 @@ namespace KinematicCharacterController.Examples
         public float xSensitivity = 10f;
         public float ySensitivity = 10f;
 
-        public HoldenExampleCharacterController Character;
+        public HoldenExampleCharacterController CharacterController;
         public HoldenExampleCharacterCamera CharacterCamera;
 
         //private const string MouseXInput = "Mouse X";
@@ -82,11 +82,11 @@ namespace KinematicCharacterController.Examples
             Cursor.lockState = CursorLockMode.Locked;
 
             // Tell camera to follow transform
-            CharacterCamera.SetFollowTransform(Character.CameraFollowPoint);
+            CharacterCamera.SetFollowTransform(CharacterController.CameraFollowPoint);
 
             // Ignore the character's collider(s) for camera obstruction checks
             CharacterCamera.IgnoredColliders.Clear();
-            CharacterCamera.IgnoredColliders.AddRange(Character.GetComponentsInChildren<Collider>());
+            CharacterCamera.IgnoredColliders.AddRange(CharacterController.GetComponentsInChildren<Collider>());
 
             
         }
@@ -104,13 +104,15 @@ namespace KinematicCharacterController.Examples
         private void LateUpdate()
         {
             // Handle rotating the camera along with physics movers
-            if (CharacterCamera.RotateWithPhysicsMover && Character.Motor.AttachedRigidbody != null)
+            if (CharacterCamera.RotateWithPhysicsMover && CharacterController.Motor.AttachedRigidbody != null)
             {
-                CharacterCamera.PlanarDirection = Character.Motor.AttachedRigidbody.GetComponent<PhysicsMover>().RotationDeltaFromInterpolation * CharacterCamera.PlanarDirection;
-                CharacterCamera.PlanarDirection = Vector3.ProjectOnPlane(CharacterCamera.PlanarDirection, Character.Motor.CharacterUp).normalized;
+                CharacterCamera.PlanarDirection = CharacterController.Motor.AttachedRigidbody.GetComponent<PhysicsMover>().RotationDeltaFromInterpolation * CharacterCamera.PlanarDirection;
+                //CharacterCamera.PlanarDirection = Vector3.ProjectOnPlane(CharacterCamera.PlanarDirection, Character.Motor.CharacterUp).normalized;
+                CharacterCamera.PlanarDirection = Vector3.ProjectOnPlane(CharacterCamera.PlanarDirection, -CharacterController.Gravity).normalized;
             }
 
             //Character.UpdateCameraFollowPointTransform(Time.deltaTime);
+            CharacterCamera.SetCameraPlanarUp(-CharacterController.Gravity.normalized);
             HandleCameraInput();
 
         }
@@ -135,7 +137,7 @@ namespace KinematicCharacterController.Examples
             // Handle toggling zoom level
             if (Input.GetMouseButtonDown(1))
             {
-                CharacterCamera.TargetDistance = (CharacterCamera.TargetDistance == 0f) ? CharacterCamera.DefaultDistance : 0f;
+                CharacterCamera.TargetDistance = CharacterCamera.DefaultDistance; //CharacterCamera.TargetDistance = (CharacterCamera.TargetDistance == 0f) ? CharacterCamera.DefaultDistance : 0f;
             }
         }
 
@@ -172,7 +174,7 @@ namespace KinematicCharacterController.Examples
 
 
             // Apply inputs to character
-            Character.SetInputs(ref characterInputs);
+            CharacterController.SetInputs(ref characterInputs);
         }
 
 

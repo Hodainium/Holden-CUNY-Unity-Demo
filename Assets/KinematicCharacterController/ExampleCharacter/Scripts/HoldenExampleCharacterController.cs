@@ -209,6 +209,7 @@ namespace KinematicCharacterController.Examples
         private Vector3 _lastGroundedPosition;
         private Vector3 _cameraFollowPointChildOffset;
         private Vector3 _storedCameraFollowPosition;
+        private float _storedJumpSpeedMultiplier = 1f;
 
 
 
@@ -523,6 +524,12 @@ namespace KinematicCharacterController.Examples
 
                             switch (CurrentCharacterGroundedState)
                             {
+                                //case CharacterGroundedState.Airborne:
+                                //    {
+                                //        smoothedLookInputDirection = Vector3.Slerp(Motor.CharacterForward, _lookInputVector, 1 - Mathf.Exp(-OrientationSharpness * deltaTime)).normalized;
+
+                                //        break;
+                                //    }
                                 default:
                                     {
                                         velocityOnInputsPlane = Vector3.ProjectOnPlane(Motor.BaseVelocity, Motor.CharacterUp);
@@ -688,7 +695,7 @@ namespace KinematicCharacterController.Examples
                                 {
                                     float inputAgainstWall = Vector3.Dot(_moveInputVector, -_wallNormal);
                                     Debug.Log("Wall input: " + inputAgainstWall);
-                                    if (CanClimb() && inputAgainstWall > -0.2f) //If we are above a certain velocity slide on the wall instead of climb. Uncontrollable velocity  
+                                    if (CanClimb()) //If we are above a certain velocity slide on the wall instead of climb. Uncontrollable velocity  // && inputAgainstWall > -0.2f
                                     {
                                         wallClimbInputDirectionNormalized = Vector3.ProjectOnPlane(_moveInputRawXZX, _wallNormal).normalized; //= _moveInputRawXZY.normalized; //
                                         
@@ -743,7 +750,7 @@ namespace KinematicCharacterController.Examples
                                     float inputTowardsMovement = Vector3.Dot(_moveInputVector, wallRunDirectionNormalized);
 
 
-                                    if (CanClimb() && inputTowardsMovement > -0.2f) //If we are above a certain velocity slide on the wall instead of climb. Uncontrollable velocity  
+                                    if (CanClimb() && inputTowardsMovement > -0.7f) //If we are above a certain velocity slide on the wall instead of climb. Uncontrollable velocity  // && inputTowardsMovement > -0.2f
                                     {                                        
                                         
                                         gravityVector = Vector3.zero;
@@ -777,7 +784,7 @@ namespace KinematicCharacterController.Examples
                                     {
 
                                         AddVelocity(_wallNormal.normalized * WallRepulseForce * Time.deltaTime);
-                                        gravityVector = Gravity;
+                                        //gravityVector = Gravity;
                                         targetMovementVelocity = currentVelocity + GetAddedAirVelocity(ref currentVelocity, deltaTime);
                                         _isWallRunning = false;
                                         _isWallJump = true;
@@ -798,41 +805,39 @@ namespace KinematicCharacterController.Examples
             
 
             Vector3 targetDashMovementVelocity;
-            if (_wantsToDash && CanDash())
+            if (_wantsToDash)
             {
-
-                if (_isAimingDash)
+                if (CanDash())
                 {
-                    _dashVector = _lookInputNonPlanarVector.normalized * DashForce;
-                    //if (currentVelocity.magnitude > 0.1)
-                    //{
-                    //    _dashVector = currentVelocity.normalized * DashForce;
-                    //}
-                    //else
-                    //{
-                    //    _dashVector = Motor.CharacterForward.normalized * DashForce;
-                    //}               
-                }
-                else
-                {
-                    
-                    if (_moveInputVector.magnitude > 0.1)
+                    if (_isAimingDash)
                     {
-                        _dashVector = _moveInputVector.normalized * DashForce;
+                        _dashVector = _lookInputNonPlanarVector.normalized * DashForce;           
                     }
                     else
                     {
-                        _dashVector = Motor.CharacterForward.normalized * DashForce;
+
+                        if (_moveInputVector.magnitude > 0.1)
+                        {
+                            _dashVector = _moveInputVector.normalized * DashForce;
+                        }
+                        else
+                        {
+                            _dashVector = _lookInputVector.normalized * DashForce;
+                        }
+
                     }
-                    
+                    _wantsToDash = false;
+                    _isDashing = true;
+                    _isJumping = false;
+                    _dashCooldownTimer.ResetTimer();
+                    _dashSpeedBoostTimer.ResetTimer();
+                    _dashCountCurrent--;
+                    SetAnimatorDashTriggerAndDirection(_dashVector, ref currentVelocity);
                 }
-                _wantsToDash = false;
-                _isDashing = true;
-                _isJumping = false;
-                _dashCooldownTimer.ResetTimer();
-                _dashSpeedBoostTimer.ResetTimer();
-                _dashCountCurrent--;
-                SetAnimatorDashTriggerAndDirection(_dashVector, ref currentVelocity);
+                else
+                {
+                    _wantsToDash = false;
+                }
             }
 
 
@@ -873,6 +878,8 @@ namespace KinematicCharacterController.Examples
             if (_jumpRequested && (_jumpCountCurrent > 0) || _isWallJump)
             {
 
+                _storedJumpSpeedMultiplier = 1f;
+
                 if (!_isWallJump)
                 {
                     _jumpCountCurrent--;
@@ -895,14 +902,14 @@ namespace KinematicCharacterController.Examples
                         }
                     case CharacterGroundedState.Wall:
                         {
-
+                            _storedJumpSpeedMultiplier = 1.5f;
                             _storedJumpDirection = (_wallNormal + Motor.CharacterUp).normalized;
                             break;
                         }
                     case CharacterGroundedState.Airborne:
                     default:
                         {
-                            _storedJumpDirection = Motor.CharacterUp;
+                            _storedJumpDirection = (Motor.CharacterUp + _moveInputVector);
                             break;
                         }
                 }
@@ -942,7 +949,7 @@ namespace KinematicCharacterController.Examples
                     if (_isJumpHeld)
                     {
                         currentVelocity -= Vector3.Project(currentVelocity, _storedJumpDirection); //currentVelocity -= Vector3.Project(currentVelocity, Motor.CharacterUp);
-                        currentVelocity += (_storedJumpDirection * MaxJumpUpSpeed) * deltaTime;
+                        currentVelocity += (_storedJumpDirection * MaxJumpUpSpeed) * _storedJumpSpeedMultiplier * deltaTime;
                         _gravityScale = 1f;
                     }
                     else
@@ -1325,21 +1332,23 @@ namespace KinematicCharacterController.Examples
 
         private void EvaluateWallLookState() 
         {
-            float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, Motor.CharacterForward);
+            //float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, Motor.CharacterForward);
+            //float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, _lookInputVector);
+            float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, _moveInputVector);
             Debug.Log(inputWallNormalDotProduct);
             Vector3 wallRightDirection = Vector3.Cross(Motor.CharacterUp, _wallNormal);
             float inputWallRightDotProduct = Vector3.Dot(wallRightDirection, Motor.CharacterForward);
             
             //float CharForwardWallDotProduct = Vector3.Dot(_wallNormal, Motor.CharacterForward);
-            if (0.8f < inputWallNormalDotProduct)
+            if (0.7f < inputWallNormalDotProduct)
             {
                 CurrentCharacterWallLookState = CharacterWallLookState.Forward;
             }
-            else if (inputWallNormalDotProduct < -0.8f) //We are faced away from the wall
+            else if (inputWallNormalDotProduct < -0.7f) //We are faced away from the wall
             {
                 CurrentCharacterWallLookState = CharacterWallLookState.Away;
             }
-            else if (Mathf.Abs(inputWallNormalDotProduct) <= 0.8f) //Are we looking to the left or right?
+            else if (Mathf.Abs(inputWallNormalDotProduct) <= 0.7f) //Are we looking to the left or right?
             {
                 if (0f < inputWallRightDotProduct)
                 {
@@ -1411,41 +1420,6 @@ namespace KinematicCharacterController.Examples
             return addedVelocity;
         }
 
-        protected Vector3 GetJumpDirectionNormalized()
-        {
-            Vector3 jumpDirection;
-
-            switch (CurrentCharacterGroundedState)
-            {
-                case CharacterGroundedState.GroundedStable:
-                    {
-                        jumpDirection = Motor.GroundingStatus.GroundNormal + Gravity.normalized;
-                        //jumpDirection = Motor.CharacterUp;
-                        break;
-                    }
-                case CharacterGroundedState.GroundedUnstable:
-                    {
-                        jumpDirection = Motor.GroundingStatus.GroundNormal + Gravity.normalized;
-                        //jumpDirection = Motor.CharacterUp;
-                        break;
-                    }
-                case CharacterGroundedState.Wall:
-                    {
-                        
-                        jumpDirection = _wallNormal + Motor.CharacterUp;
-                        break;
-                    }
-                case CharacterGroundedState.Airborne:
-                default:
-                    {
-                        jumpDirection = Motor.CharacterUp;
-                        break;
-                    }
-            }
-
-            return jumpDirection.normalized;
-        }
-
         protected Vector3 GetWallRunDirection()
         {
             return Vector3.ProjectOnPlane(Motor.CharacterForward, _wallNormal);
@@ -1499,16 +1473,17 @@ namespace KinematicCharacterController.Examples
 
         private bool CanClimb()
         {
-            Vector3 previousVelocityOnInputsPlane = Vector3.ProjectOnPlane(_previousVelocity, Motor.CharacterUp);
-            if (previousVelocityOnInputsPlane.magnitude > WallClimbMinimumNeededSpeed && (_currentClimbCharge > 0f))
-            {
-                return true;
-            }
-            else if (_currentClimbCharge > 0f && _isWallRunning)
-            {
-                return true;
-            }
-            return false;
+            //Vector3 previousVelocityOnInputsPlane = Vector3.ProjectOnPlane(_previousVelocity, Motor.CharacterUp);
+            //if (previousVelocityOnInputsPlane.magnitude > WallClimbMinimumNeededSpeed && (_currentClimbCharge > 0f))
+            //{
+            //    return true;
+            //}
+            //else if (_currentClimbCharge > 0f && _isWallRunning)
+            //{
+            //    return true;
+            //}
+            //return false;
+            return true;
         }
 
         private bool CanRun()
@@ -1638,6 +1613,16 @@ namespace KinematicCharacterController.Examples
         public void ResetDashCount()
         {
             _dashCountCurrent = AirDashCountMax;
+        }
+
+        public void AddExtraDash()
+        {
+            _dashCountCurrent++;
+        }
+
+        public void AddExtraJump()
+        {
+            _jumpCountCurrent++;
         }
 
         public void AddDash(int dashes)
