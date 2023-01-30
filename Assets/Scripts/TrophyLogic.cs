@@ -7,6 +7,9 @@ public class TrophyLogic : MonoBehaviour
     [SerializeField] float _rotationSpeed = 0f;
     [SerializeField] ParticleSystem confettiParticles;
     [SerializeField] GameObject _meshObject;
+    [SerializeField] Collider _collider;
+    [SerializeField] GameObject _playerManager;
+    [SerializeField] MenuManager _menuManager;
 
     // Start is called before the first frame update
     void Start()
@@ -25,6 +28,7 @@ public class TrophyLogic : MonoBehaviour
         if(collider.gameObject.layer == 3)
         {
             confettiParticles.Play();
+            _collider.enabled = false;
             EndGame();
         }
     }
@@ -33,5 +37,7 @@ public class TrophyLogic : MonoBehaviour
     {
         Debug.Log("Game Ended");
         _meshObject.SetActive(false);
+        _playerManager.SetActive(false);
+        _menuManager.OnEnterReplayMenu();
     }
 }
