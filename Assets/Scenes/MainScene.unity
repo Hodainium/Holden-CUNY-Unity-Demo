@@ -29029,7 +29029,7 @@ MonoBehaviour:
   confettiParticles: {fileID: 833633061}
   _meshObject: {fileID: 6690696306711511153}
   _collider: {fileID: 1492022248}
-  _playerManager: {fileID: 3585457671506904442}
+  _playerManager: {fileID: 3585457671506904445}
   _menuManager: {fileID: 4378097509590114558}
 --- !u!1 &1492885343
 GameObject:

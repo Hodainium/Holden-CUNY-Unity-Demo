@@ -537,7 +537,7 @@ namespace KinematicCharacterController
                             _movementSpeedFloat = 4;
                             targetMovementVelocity = reorientedInput * MaxMoveStableSpeed;
                         }
-                        else if ((((currentVelocityMagnitudeDirty > MaxMoveRunSpeed) && _wantsToRun) || _isRunning) && CanRun()) //play running -> boosting          // && CanRun()
+                        else if ((((currentVelocityMagnitudeDirty > MaxMoveRunSpeed) && _wantsToRun)) && CanRun()) //play running -> boosting          //  || _isRunning
                         {
                             _movementSpeedFloat = 3 + (currentVelocityMagnitudeDirty - MaxMoveRunSpeed) / (MaxMoveBoostSpeed - MaxMoveRunSpeed); // we want an extra state here this code is
                             targetMovementVelocity = reorientedInput * MaxMoveBoostSpeed;
@@ -557,6 +557,7 @@ namespace KinematicCharacterController
                         {
                             _movementSpeedFloat = currentVelocityMagnitudeDirty/MaxMoveWalkSpeed;
                             targetMovementVelocity = reorientedInput * MaxMoveJogSpeed;
+                            _isRunning = false;
                         }
                         else //Play idle
                         {
@@ -1103,7 +1104,7 @@ namespace KinematicCharacterController
                     {
                         _currentWallCollider = hitCollider;
                         _wallNormal = hitNormal;
-                        _wallHitPoint = hitNormal;
+                        _wallHitPoint = hitPoint;
 
                         //_wallHitCheckTimer.ResetTimer();
                         StartedTouchingWall();
@@ -1111,7 +1112,7 @@ namespace KinematicCharacterController
                     else if (_wallNormal != hitNormal)
                     {
                         _wallNormal = hitNormal;
-                        _wallHitPoint = hitNormal;
+                        _wallHitPoint = hitPoint;
                     }
                     else
                     {
@@ -1249,6 +1250,8 @@ namespace KinematicCharacterController
             //float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, Motor.CharacterForward);
             //float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, _lookInputVector);
             float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, _moveInputVector.normalized);
+            Debug.Log("Wall normal " + _wallNormal);
+            Debug.Log("Move input " + _moveInputVector);
             Debug.Log(inputWallNormalDotProduct);
             Vector3 wallRightDirection = Vector3.Cross(Motor.CharacterUp, _wallNormal);
             float inputWallRightDotProduct = Vector3.Dot(wallRightDirection, Motor.CharacterForward);

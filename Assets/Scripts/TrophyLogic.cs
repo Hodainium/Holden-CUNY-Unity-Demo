@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using KinematicCharacterController;
 
 public class TrophyLogic : MonoBehaviour
 {
@@ -8,7 +9,7 @@ public class TrophyLogic : MonoBehaviour
     [SerializeField] ParticleSystem confettiParticles;
     [SerializeField] GameObject _meshObject;
     [SerializeField] Collider _collider;
-    [SerializeField] GameObject _playerManager;
+    [SerializeField] HoldenPlayerManager _playerManager;
     [SerializeField] MenuManager _menuManager;
 
     // Start is called before the first frame update
@@ -36,7 +37,8 @@ public class TrophyLogic : MonoBehaviour
     private void EndGame()
     {        
         _meshObject.SetActive(false);
-        _playerManager.SetActive(false);
+        _playerManager.CharacterController.MeshRoot.gameObject.SetActive(false);
+        _playerManager.gameObject.SetActive(false);
         _menuManager.OnEnterReplayMenu();
     }
 }
