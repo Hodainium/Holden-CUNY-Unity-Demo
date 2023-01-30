@@ -7802,7 +7802,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 441142286}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 109.1, y: 102.24, z: -49.17}
+  m_LocalPosition: {x: 110.48, y: 105.85, z: -49.57}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -18894,6 +18894,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PlayerHandlerObject: {fileID: 3585457671506904445}
+  _resetState:
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 0}
+    BaseVelocity: {x: 0, y: 0, z: 0}
+    MustUnground: 0
+    MustUngroundTime: 0
+    LastMovementIterationFoundAnyGround: 1
+    AttachedRigidbody: {fileID: 0}
+    AttachedRigidbodyVelocity: {x: 0, y: 0, z: 0}
   _defaultRespawnPoint: {fileID: 1196595971}
 --- !u!1 &900935050
 GameObject:
@@ -23990,7 +23999,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1077712025}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 130.3, y: 101.86, z: -46.4}
+  m_LocalPosition: {x: 125.67, y: 101.86, z: -46.4}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 1
   m_Children:
