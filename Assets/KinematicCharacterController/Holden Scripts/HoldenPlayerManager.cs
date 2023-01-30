@@ -46,7 +46,7 @@ namespace KinematicCharacterController
             _playerAttack1IA.Enable();
             _playerLookIA.Enable();
             _playerJumpIA.Enable();
-            _playerCrouchIA.Enable();
+            //_playerCrouchIA.Enable();
             _playerClimbIA.Enable();
             _playerRunIA.Enable();
             _playerDashIA.Enable();
@@ -67,7 +67,7 @@ namespace KinematicCharacterController
             _playerAttack1IA.Disable();
             _playerLookIA.Disable();
             _playerJumpIA.Disable();
-            _playerCrouchIA.Disable();
+            //_playerCrouchIA.Disable();
             _playerClimbIA.Disable();
             _playerRunIA.Disable();
             _playerDashIA.Disable();

@@ -13,6 +13,7 @@ public class MenuManager : MonoBehaviour
     [SerializeField] GameObject _gameHudElements;
 
     [SerializeField] GameObject _mainMenuCamera;
+    [SerializeField] GameObject _playerCamera;
 
     public void OnClickPlayButton() //Can't have it just be re-enabled should always be on
     {
@@ -43,7 +44,8 @@ public class MenuManager : MonoBehaviour
     {
         _replayMenuElements.SetActive(true);
         _gameHudElements.SetActive(false);
-        _playerObjects.SetActive(false);
+        //_playerObjects.SetActive(false);
+        Cursor.lockState = CursorLockMode.Confined;
     }
 
     public void OnClickReplayButton()
