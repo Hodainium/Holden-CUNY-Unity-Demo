@@ -359,10 +359,10 @@ MonoBehaviour:
   mInfiniteClipLoop: 0
   m_MatchTargetFields: 56
   m_Position: {x: 0, y: 0, z: 0}
-  m_EulerAngles: {x: 90, y: 0, z: -90}
+  m_EulerAngles: {x: 0, y: 0, z: 0}
   m_AvatarMask: {fileID: 0}
   m_ApplyAvatarMask: 1
-  m_TrackOffset: 1
+  m_TrackOffset: 0
   m_InfiniteClip: {fileID: -8282762791996235140}
   m_OpenClipOffsetRotation: {x: 0, y: 0, z: 0, w: 1}
   m_Rotation: {x: 0, y: 0, z: 0, w: 1}

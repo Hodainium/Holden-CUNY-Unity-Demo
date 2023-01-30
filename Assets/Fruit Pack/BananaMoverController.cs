@@ -77,11 +77,8 @@ public class BananaMoverController : MonoBehaviour, IMoverController
 
         if (_isBananaDisabled)
         {
-            Debug.Log("Banana is disabled!");
-            Debug.Log(_respawnTimer.GetTime());
             if (!_respawnTimer.IsActive())
             {
-                Debug.Log("Banana reset!");
                 ResetBanana();
             }
         }

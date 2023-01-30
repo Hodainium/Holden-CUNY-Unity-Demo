@@ -1248,7 +1248,7 @@ namespace KinematicCharacterController
         {
             //float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, Motor.CharacterForward);
             //float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, _lookInputVector);
-            float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, _moveInputVector);
+            float inputWallNormalDotProduct = Vector3.Dot(-_wallNormal.normalized, _moveInputVector.normalized);
             Debug.Log(inputWallNormalDotProduct);
             Vector3 wallRightDirection = Vector3.Cross(Motor.CharacterUp, _wallNormal);
             float inputWallRightDotProduct = Vector3.Dot(wallRightDirection, Motor.CharacterForward);

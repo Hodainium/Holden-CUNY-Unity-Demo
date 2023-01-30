@@ -34,8 +34,7 @@ public class TrophyLogic : MonoBehaviour
     }
 
     private void EndGame()
-    {
-        Debug.Log("Game Ended");
+    {        
         _meshObject.SetActive(false);
         _playerManager.SetActive(false);
         _menuManager.OnEnterReplayMenu();

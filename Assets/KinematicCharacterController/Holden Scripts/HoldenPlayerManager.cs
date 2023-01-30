@@ -53,11 +53,11 @@ namespace KinematicCharacterController
             _playerAimDashIA.Enable();
 
             //Debug.Log(_playerLookIA.bindings[0].processors);
-            string overrideProcessors = "ScaleVector2(x=" + xSensitivity + ",y=" + ySensitivity + ")";
-            var binding = _playerLookIA.bindings[0];
-            binding.overrideProcessors = overrideProcessors;
-            Debug.Log("Processors set to " + binding.overrideProcessors);
-            _playerLookIA.ChangeBindingWithGroup("Gamepad").To(binding);
+            //string overrideProcessors = "ScaleVector2(x=" + xSensitivity + ",y=" + ySensitivity + ")";
+            //var binding = _playerLookIA.bindings[0];
+            //binding.overrideProcessors = overrideProcessors;
+            //Debug.Log("Processors set to " + binding.overrideProcessors);
+            //_playerLookIA.ChangeBindingWithGroup("Gamepad").To(binding);
             
         }
 
