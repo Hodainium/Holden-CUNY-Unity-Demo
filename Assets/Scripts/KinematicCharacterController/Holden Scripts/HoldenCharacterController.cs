@@ -439,48 +439,50 @@ namespace KinematicCharacterController
         public void UpdateRotation(ref Quaternion currentRotation, float deltaTime)
         {
             Vector3 currentUp = (currentRotation * Vector3.up);
+            Vector3 velocityOnInputsPlane;
+            Vector3 smoothedLookInputDirection;
 
-            if (CurrentCharacterGroundedState == CharacterGroundedState.Wall)
+            switch (CurrentCharacterGroundedState)
             {
-                Vector3 wallRightDirection = Vector3.Cross(Motor.CharacterUp, _wallNormal);
+                case CharacterGroundedState.Wall:
+                    {
+                        Vector3 wallRightDirection = Vector3.Cross(Motor.CharacterUp, _wallNormal);
 
-                switch (CurrentCharacterWallLookState)
-                {
-                    case CharacterWallLookState.Forward:
+                        switch (CurrentCharacterWallLookState)
                         {
-                            currentRotation = Quaternion.LookRotation(-_wallNormal, Motor.CharacterUp);
-                            break;
+                            case CharacterWallLookState.Forward:
+                                currentRotation = Quaternion.LookRotation(-_wallNormal, Motor.CharacterUp);
+                                break;
+                            case CharacterWallLookState.Away:
+                                currentRotation = Quaternion.LookRotation(_wallNormal, Motor.CharacterUp);
+                                break;
+                            case CharacterWallLookState.Left:
+                                currentRotation = Quaternion.LookRotation(-wallRightDirection, Motor.CharacterUp);
+                                break;
+                            case CharacterWallLookState.Right:
+                                currentRotation = Quaternion.LookRotation(wallRightDirection, Motor.CharacterUp);
+                                break;
                         }
-
-                    case CharacterWallLookState.Away:
-                        currentRotation = Quaternion.LookRotation(_wallNormal, Motor.CharacterUp);
                         break;
-                    case CharacterWallLookState.Left:
-                        currentRotation = Quaternion.LookRotation(-wallRightDirection, Motor.CharacterUp);
+                    }
+                case CharacterGroundedState.Airborne:
+                    {
+                        //do nothing to current rotation
                         break;
-                    case CharacterWallLookState.Right:
-                        currentRotation = Quaternion.LookRotation(wallRightDirection, Motor.CharacterUp);
+                    }
+                case CharacterGroundedState.GroundedStable:
+                case CharacterGroundedState.GroundedUnstable:
+                    {
+                        velocityOnInputsPlane = Vector3.ProjectOnPlane(Motor.BaseVelocity, Motor.CharacterUp);
+                        smoothedLookInputDirection = Vector3.Slerp(Motor.CharacterForward, velocityOnInputsPlane, 1 - Mathf.Exp(-OrientationSharpness * deltaTime)).normalized;
+                        currentRotation = Quaternion.LookRotation(smoothedLookInputDirection, Motor.CharacterUp);
                         break;
-                }
+                    }
             }
-            else
-            {
-                Vector3 velocityOnInputsPlane;
-                Vector3 smoothedLookInputDirection;
-
-                switch (CurrentCharacterGroundedState)
-                {                                
-                    default:
-                        {
-                            velocityOnInputsPlane = Vector3.ProjectOnPlane(Motor.BaseVelocity, Motor.CharacterUp);
-                            smoothedLookInputDirection = Vector3.Slerp(Motor.CharacterForward, velocityOnInputsPlane, 1 - Mathf.Exp(-OrientationSharpness * deltaTime)).normalized;
-                            break;
-                        }
-                }
                             
 
                 // Set the current rotation (which will be used by the KinematicCharacterMotor)
-                currentRotation = Quaternion.LookRotation(smoothedLookInputDirection, Motor.CharacterUp);
+                
 
                 if (Motor.GroundingStatus.IsStableOnGround && !_wantsToTest)
                 {
@@ -498,7 +500,7 @@ namespace KinematicCharacterController
                     currentRotation = Quaternion.FromToRotation(currentUp, smoothedGravityDir) * currentRotation;
                 }
                         
-            }
+            
         }
 
             
@@ -580,7 +582,7 @@ namespace KinematicCharacterController
                             Vector3 addedVelocity = GetAddedAirVelocity(ref currentVelocity, deltaTime);
 
                             // Prevent air-climbing sloped walls
-                            if (Vector3.Dot(currentVelocity + addedVelocity, addedVelocity) > 0f)//If we are heading in a positive direction, push back away from the slope.
+                            if (Vector3.Dot(currentVelocity + addedVelocity, addedVelocity) > 0f) //If we are heading in a positive direction, push back away from the slope.
                             {
                                 Vector3 perpenticularObstructionNormal = Vector3.Cross(Vector3.Cross(Motor.CharacterUp, Motor.GroundingStatus.GroundNormal), Motor.CharacterUp).normalized;
                                 addedVelocity = Vector3.ProjectOnPlane(addedVelocity, perpenticularObstructionNormal);
@@ -876,19 +878,25 @@ namespace KinematicCharacterController
 
             if (_isJumping)
             {
+                if (_jumpedThisFrame)
+                {
+                    currentVelocity -= Vector3.Project(currentVelocity, Gravity); //currentVelocity -= Vector3.Project(currentVelocity, _storedJumpDirection);
+                    currentVelocity += (_storedJumpDirection * MaxJumpUpSpeed) * _storedJumpSpeedMultiplier * deltaTime;
+                }
                 //Jumping upwards direction
                 if (_jumpHeldTimer.IsActive())
                 {
+                    //_gravityScale = 0f;
                     if (_isJumpHeld)
                     {
-                        currentVelocity -= Vector3.Project(currentVelocity, _storedJumpDirection); //currentVelocity -= Vector3.Project(currentVelocity, Motor.CharacterUp);
+                        //currentVelocity -= Vector3.Project(currentVelocity, _storedJumpDirection); //currentVelocity -= Vector3.Project(currentVelocity, Motor.CharacterUp);
                         currentVelocity += (_storedJumpDirection * MaxJumpUpSpeed) * _storedJumpSpeedMultiplier * deltaTime;
-                        _gravityScale = 1f;
+                        _gravityScale = 0f;
                     }
                     else
                     {
                         _jumpHeldTimer.Disable();
-                        _gravityScale = 2f;
+                        //_gravityScale = 2f;
                     }
 
                 }
