@@ -37,9 +37,18 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                     ""initialStateCheck"": true
                 },
                 {
-                    ""name"": ""Look"",
+                    ""name"": ""LookMouse"",
                     ""type"": ""Value"",
                     ""id"": ""1b40cf31-aad3-4f16-9d49-2005184225b0"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""LookController"",
+                    ""type"": ""Value"",
+                    ""id"": ""28a4d52b-0ee4-4520-be4b-472e016731e6"",
                     ""expectedControlType"": ""Vector2"",
                     ""processors"": """",
                     ""interactions"": """",
@@ -244,34 +253,12 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""c1f7a91b-d0fd-4a62-997e-7fb9b69bf235"",
-                    ""path"": ""<Gamepad>/rightStick"",
-                    ""interactions"": """",
-                    ""processors"": ""ScaleVector2(x=22,y=22)"",
-                    ""groups"": "";Gamepad"",
-                    ""action"": ""Look"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""8c8e490b-c610-4785-884f-f04217b23ca4"",
                     ""path"": ""<Mouse>/delta"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse"",
-                    ""action"": ""Look"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""3e5f5442-8668-4b27-a940-df99bad7e831"",
-                    ""path"": ""<Joystick>/{Hatswitch}"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": ""Joystick"",
-                    ""action"": ""Look"",
+                    ""action"": ""LookMouse"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 },
@@ -459,6 +446,17 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse"",
                     ""action"": ""AimDash"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""11015526-7d64-4ed2-b74e-0abe18cf4118"",
+                    ""path"": ""<Gamepad>/rightStick"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LookController"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1047,7 +1045,8 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
         // Player
         m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
         m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
-        m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
+        m_Player_LookMouse = m_Player.FindAction("LookMouse", throwIfNotFound: true);
+        m_Player_LookController = m_Player.FindAction("LookController", throwIfNotFound: true);
         m_Player_Attack1 = m_Player.FindAction("Attack1", throwIfNotFound: true);
         m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
         m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
@@ -1127,7 +1126,8 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
     private readonly InputActionMap m_Player;
     private IPlayerActions m_PlayerActionsCallbackInterface;
     private readonly InputAction m_Player_Move;
-    private readonly InputAction m_Player_Look;
+    private readonly InputAction m_Player_LookMouse;
+    private readonly InputAction m_Player_LookController;
     private readonly InputAction m_Player_Attack1;
     private readonly InputAction m_Player_Crouch;
     private readonly InputAction m_Player_Jump;
@@ -1140,7 +1140,8 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
         private @PlayerControlMap m_Wrapper;
         public PlayerActions(@PlayerControlMap wrapper) { m_Wrapper = wrapper; }
         public InputAction @Move => m_Wrapper.m_Player_Move;
-        public InputAction @Look => m_Wrapper.m_Player_Look;
+        public InputAction @LookMouse => m_Wrapper.m_Player_LookMouse;
+        public InputAction @LookController => m_Wrapper.m_Player_LookController;
         public InputAction @Attack1 => m_Wrapper.m_Player_Attack1;
         public InputAction @Crouch => m_Wrapper.m_Player_Crouch;
         public InputAction @Jump => m_Wrapper.m_Player_Jump;
@@ -1160,9 +1161,12 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                 @Move.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnMove;
                 @Move.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnMove;
                 @Move.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnMove;
-                @Look.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLook;
-                @Look.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLook;
-                @Look.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLook;
+                @LookMouse.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLookMouse;
+                @LookMouse.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLookMouse;
+                @LookMouse.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLookMouse;
+                @LookController.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLookController;
+                @LookController.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLookController;
+                @LookController.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLookController;
                 @Attack1.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAttack1;
                 @Attack1.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAttack1;
                 @Attack1.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnAttack1;
@@ -1191,9 +1195,12 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
                 @Move.started += instance.OnMove;
                 @Move.performed += instance.OnMove;
                 @Move.canceled += instance.OnMove;
-                @Look.started += instance.OnLook;
-                @Look.performed += instance.OnLook;
-                @Look.canceled += instance.OnLook;
+                @LookMouse.started += instance.OnLookMouse;
+                @LookMouse.performed += instance.OnLookMouse;
+                @LookMouse.canceled += instance.OnLookMouse;
+                @LookController.started += instance.OnLookController;
+                @LookController.performed += instance.OnLookController;
+                @LookController.canceled += instance.OnLookController;
                 @Attack1.started += instance.OnAttack1;
                 @Attack1.performed += instance.OnAttack1;
                 @Attack1.canceled += instance.OnAttack1;
@@ -1372,7 +1379,8 @@ public partial class @PlayerControlMap : IInputActionCollection2, IDisposable
     public interface IPlayerActions
     {
         void OnMove(InputAction.CallbackContext context);
-        void OnLook(InputAction.CallbackContext context);
+        void OnLookMouse(InputAction.CallbackContext context);
+        void OnLookController(InputAction.CallbackContext context);
         void OnAttack1(InputAction.CallbackContext context);
         void OnCrouch(InputAction.CallbackContext context);
         void OnJump(InputAction.CallbackContext context);

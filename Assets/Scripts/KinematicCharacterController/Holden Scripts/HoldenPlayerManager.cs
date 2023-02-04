@@ -23,7 +23,7 @@ namespace KinematicCharacterController
 
         //private PlayerMovementInputAction playerMovementIA;
         private PlayerControlMap _playerControlMapping;
-        private InputAction _playerMovementIA, _playerAttack1IA, _playerLookIA, _playerJumpIA, _playerCrouchIA, _playerClimbIA, _playerRunIA, _playerDashIA, _playerAimDashIA;
+        private InputAction _playerMovementIA, _playerAttack1IA, _playerLookMouseIA, _playerLookControllerIA, _playerJumpIA, _playerCrouchIA, _playerClimbIA, _playerRunIA, _playerDashIA, _playerAimDashIA;
 
         private void Awake()
         {
@@ -34,7 +34,8 @@ namespace KinematicCharacterController
         {
             _playerMovementIA = _playerControlMapping.Player.Move;
             _playerAttack1IA = _playerControlMapping.Player.Attack1;
-            _playerLookIA = _playerControlMapping.Player.Look;
+            _playerLookMouseIA = _playerControlMapping.Player.LookMouse;
+            _playerLookControllerIA = _playerControlMapping.Player.LookController;
             _playerJumpIA = _playerControlMapping.Player.Jump;
             _playerCrouchIA = _playerControlMapping.Player.Crouch;
             _playerClimbIA = _playerControlMapping.Player.Climb;
@@ -44,7 +45,8 @@ namespace KinematicCharacterController
 
             _playerMovementIA.Enable();
             _playerAttack1IA.Enable();
-            _playerLookIA.Enable();
+            _playerLookMouseIA.Enable();
+            _playerLookControllerIA.Enable();
             _playerJumpIA.Enable();
             //_playerCrouchIA.Enable();
             _playerClimbIA.Enable();
@@ -65,7 +67,8 @@ namespace KinematicCharacterController
         {
             _playerMovementIA.Disable();
             _playerAttack1IA.Disable();
-            _playerLookIA.Disable();
+            _playerLookMouseIA.Disable();
+            _playerLookControllerIA.Disable();
             _playerJumpIA.Disable();
             //_playerCrouchIA.Disable();
             _playerClimbIA.Disable();
@@ -117,8 +120,12 @@ namespace KinematicCharacterController
         private void HandleCameraInput()
         {
             // Create the look input vector for the camera
-            Vector2 mouseRawInput = GetMouseScreenPosition();
-            Vector3 lookInputVector = new Vector3(mouseRawInput.x, mouseRawInput.y, 0f);
+            Vector2 mouseRawInput = GetLookMouseInput();
+            Vector2 controllerLookInput = GetLookControllerInput();
+            controllerLookInput.x *= xSensitivity * 1000f;
+            controllerLookInput.y *= ySensitivity * 1000f;
+            controllerLookInput *= Time.deltaTime;
+            Vector3 lookInputVector = new Vector3(mouseRawInput.x + controllerLookInput.x, mouseRawInput.y + controllerLookInput.y, 0f);
 
             float zoom = 0f; //disabled
 
@@ -176,7 +183,9 @@ namespace KinematicCharacterController
 
 
 
-        private Vector2 GetMouseScreenPosition() => _playerLookIA.ReadValue<Vector2>();
+        private Vector2 GetLookMouseInput() => _playerLookMouseIA.ReadValue<Vector2>();
+
+        private Vector2 GetLookControllerInput() => _playerLookControllerIA.ReadValue<Vector2>();
 
         private Vector2 GetRawMovementInput() => _playerMovementIA.ReadValue<Vector2>();
 

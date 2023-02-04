@@ -15,9 +15,18 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Look",
+                    "name": "LookMouse",
                     "type": "Value",
                     "id": "1b40cf31-aad3-4f16-9d49-2005184225b0",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "LookController",
+                    "type": "Value",
+                    "id": "28a4d52b-0ee4-4520-be4b-472e016731e6",
                     "expectedControlType": "Vector2",
                     "processors": "",
                     "interactions": "",
@@ -222,34 +231,12 @@
                 },
                 {
                     "name": "",
-                    "id": "c1f7a91b-d0fd-4a62-997e-7fb9b69bf235",
-                    "path": "<Gamepad>/rightStick",
-                    "interactions": "",
-                    "processors": "ScaleVector2(x=22,y=22)",
-                    "groups": ";Gamepad",
-                    "action": "Look",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "8c8e490b-c610-4785-884f-f04217b23ca4",
                     "path": "<Mouse>/delta",
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "Look",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "3e5f5442-8668-4b27-a940-df99bad7e831",
-                    "path": "<Joystick>/{Hatswitch}",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Joystick",
-                    "action": "Look",
+                    "action": "LookMouse",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -437,6 +424,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "AimDash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "11015526-7d64-4ed2-b74e-0abe18cf4118",
+                    "path": "<Gamepad>/rightStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LookController",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

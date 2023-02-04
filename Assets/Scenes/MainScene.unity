@@ -18894,13 +18894,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   PlayerHandlerObject: {fileID: 3585457671506904445}
-  _resetState:
+  _resetMotorState:
     Position: {x: 0, y: 0, z: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 0}
     BaseVelocity: {x: 0, y: 0, z: 0}
     MustUnground: 0
     MustUngroundTime: 0
-    LastMovementIterationFoundAnyGround: 1
+    LastMovementIterationFoundAnyGround: 0
     AttachedRigidbody: {fileID: 0}
     AttachedRigidbodyVelocity: {x: 0, y: 0, z: 0}
   _defaultRespawnPoint: {fileID: 1196595971}
@@ -37355,8 +37355,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 461cd396e3fc7cc4eb9c92bde05c1b9a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xSensitivity: 7
-  ySensitivity: 7
+  xSensitivity: 4
+  ySensitivity: 4
   CharacterController: {fileID: 5602213948602572035}
   CharacterCamera: {fileID: 330585548}
 --- !u!1 &3602291616958318603
